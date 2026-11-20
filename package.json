@@ -1,0 +1,12 @@
+{
+  "name": "mafia-royale",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Mafia Royale — вертикальна стратегія в реальному часі у мафіозному нуар-сетингу (PWA, HTML5 Canvas)",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "sim": "node tools/simulate.js 20",
+    "icons": "node tools/make-icons.js"
+  }
+}
