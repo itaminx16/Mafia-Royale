@@ -121,6 +121,7 @@ export class Game {
       stun: 0, freeze: 0, flashT: 0, damaged: false, stealth: false,
       angle: side === 'P' ? -Math.PI / 2 : Math.PI / 2,
       moving: false, walkT: Math.random() * 10, attackAnim: 0, buffed: false,
+      vendetta: false, slowT: 0,
       lifetime: 0, age: 0, spawnT: 0, healT: 0,
     }, o, { maxHp: o.hp });
   }
@@ -262,6 +263,18 @@ export class Game {
       const tdmg = statAtLevel(def.towerDmg, level);
       for (const e of inR) this.damage(e, e.kind === 'tower' ? tdmg : dmg, { splash: true, side });
       this.emit('sniperShot', { x, y, r: def.splash });
+    } else if (def.special === 'TEARGAS_SLOW_5S') {
+      this.areas.push({
+        side, x, y, r: def.splash, t: def.gasTime, tick: 0.2,
+        dps: statAtLevel(def.gasDps, level), towerPct: def.towerPct, slowPct: def.slowPct, kind: 'gas',
+      });
+      this.emit('teargas', { x, y, r: def.splash });
+    } else if (def.special === 'VENDETTA_DMG_40') {
+      this.areas.push({
+        side, x, y, r: def.splash, t: def.buffTime, tick: 99,
+        dmgBonus: def.dmgBonus, kind: 'vendetta',
+      });
+      this.emit('vendetta', { x, y, r: def.splash, side });
     }
   }
 
@@ -304,6 +317,18 @@ export class Game {
       const g = this._spawnUnits(e.side, def, e.level || 1, e.x, e.y, { count: 2, deployT: 0.35, silent: true });
       g.forEach((u, i) => { u.x += (i ? 0.5 : -0.5); });
       this.emit('vanCrash', { x: e.x, y: e.y });
+    } else if (e.special === 'LIMO_DRIVEBY_AND_SPAWN_3') {
+      this._explode(e, Math.round(e.dmg * 1.5), 1.6, { buildingsAndUnits: true });
+      const def = getDef('token_mobster');
+      const m = this._spawnUnits(e.side, def, e.level || 1, e.x, e.y, { count: 3, deployT: 0.35, silent: true });
+      m.forEach((u, i) => { u.x += (i - 1) * 0.55; });
+      this.emit('vanCrash', { x: e.x, y: e.y });
+    } else if (e.special === 'SUICIDE_EXPLOSION') {
+      // Якщо Байкера-підривника вбили по дорозі — він усе одно вибухає і б'є ворогів поруч!
+      const def = CARD_MAP.unit_biker;
+      const dDmg = statAtLevel(def.deathDmg || 220, e.level || 1);
+      this._explode(e, dDmg, e.splash || 2.0, {});
+      this.emit('death', { x: e.x, y: e.y, kind: e.kind, cardId: e.cardId, side: e.side, look: 'bike', exploded: true });
     } else {
       this.emit('death', { x: e.x, y: e.y, kind: e.kind, cardId: e.cardId, side: e.side, look: e.look && e.look.type });
     }
@@ -424,10 +449,31 @@ export class Game {
     }
     this.pending = this.pending.filter(p => !p.done);
 
-    // Вогняні зони
+    // Зони на полі: Вогонь (Молотов), Сльозогінний газ (уповільнення + шкода), Вендета (+40% шкоди союзникам)
+    for (const e of this.entities) e.vendetta = false;
+
     for (const a of this.areas) {
       a.t -= dt; a.tick -= dt;
-      if (a.tick <= 0 && a.t > -0.01) {
+      if (a.kind === 'gas') {
+        for (const e of this.entities) {
+          if (!e.alive || e.side === a.side) continue;
+          if (dist(e, a) <= a.r + e.r * 0.5) e.slowT = Math.max(e.slowT, 0.35);
+        }
+        if (a.tick <= 0 && a.t > -0.01) {
+          a.tick += 1.0;
+          for (const e of this.entities) {
+            if (!e.alive || e.side === a.side) continue;
+            if (dist(e, a) <= a.r + e.r * 0.5) {
+              this.damage(e, e.kind === 'tower' ? Math.round(a.dps * a.towerPct) : a.dps, { splash: true, side: a.side });
+            }
+          }
+        }
+      } else if (a.kind === 'vendetta') {
+        for (const e of this.entities) {
+          if (!e.alive || e.side !== a.side || e.kind !== 'unit') continue;
+          if (dist(e, a) <= a.r + e.r * 0.5) e.vendetta = true;
+        }
+      } else if (a.tick <= 0 && a.t > -0.01) {
         a.tick += 1.0;
         for (const e of this.entities) {
           if (!e.alive || e.side === a.side) continue;
@@ -508,6 +554,7 @@ export class Game {
   _updateEntity(e, dt) {
     e.flashT = Math.max(0, e.flashT - dt);
     e.attackAnim = Math.max(0, e.attackAnim - dt);
+    e.slowT = Math.max(0, e.slowT - dt);
     e.age += dt;
 
     if (e.deployT > 0) { e.deployT -= dt; return; }
@@ -551,6 +598,25 @@ export class Game {
       this._combat(e, dt, false);
       return;
     }
+    // Броньований Лімузин: повільно їде до вежі/будівлі і ОДНОЧАСНО відстрілюється з вікон по ворогах!
+    if (e.special === 'LIMO_DRIVEBY_AND_SPAWN_3') {
+      const dest = this.laneTower(e);
+      if (dest && dist(e, dest) > e.r + dest.r + 1.2) {
+        this._move(e, dest, dt);
+      } else {
+        e.moving = false;
+      }
+      const shootTarget = this._findStaticTarget(e);
+      if (shootTarget) {
+        const mult = (e.buffed ? (1 - CARD_MAP.unit_don.buffAtkSpeed) : 1) * (e.slowT > 0 ? 1.35 : 1);
+        e.atkTimer -= dt / mult;
+        if (e.atkTimer <= 0) {
+          e.atkTimer = e.atkSpeed;
+          this._attack(e, shootTarget);
+        }
+      }
+      return;
+    }
     this._combat(e, dt, e.kind === 'unit');
   }
 
@@ -569,7 +635,7 @@ export class Game {
     if (this.inRange(e, t)) {
       e.moving = false;
       e.angle = Math.atan2(t.y - e.y, t.x - e.x);
-      const mult = e.buffed ? (1 - CARD_MAP.unit_don.buffAtkSpeed) : 1;
+      const mult = (e.buffed ? (1 - CARD_MAP.unit_don.buffAtkSpeed) : 1) * (e.slowT > 0 ? 1.35 : 1);
       e.atkTimer -= dt / mult;
       if (e.atkTimer <= 0) {
         e.atkTimer = e.atkSpeed > 0 ? e.atkSpeed : 1;
@@ -596,8 +662,10 @@ export class Game {
     e.attackAnim = 0.18;
     if (e.stealth) e.stealth = false;
 
+    const dmg = Math.round(e.dmg * (e.vendetta ? 1.4 : 1));
+
     if (e.special === 'SUICIDE_EXPLOSION') {
-      this._explode(e, e.dmg, e.splash, {});
+      this._explode(e, dmg, e.splash, {});
       e.alive = false; e.hp = 0;
       this.emit('death', { x: e.x, y: e.y, kind: 'unit', cardId: e.cardId, side: e.side, look: 'bike', exploded: true });
       return;
@@ -607,24 +675,72 @@ export class Game {
       return;
     }
     if (e.special === 'STUN_1_SEC') {
-      this.projectiles.push({ side: e.side, x: e.x, y: e.y, tx: t.x, ty: t.y, target: t, dmg: e.dmg, stun: CARD_MAP.unit_lawyer.stun, speed: 9, kind: 'paper' });
+      this.projectiles.push({ side: e.side, x: e.x, y: e.y, tx: t.x, ty: t.y, target: t, dmg, stun: CARD_MAP.unit_lawyer.stun, speed: 9, kind: 'paper' });
       this.emit('shot', { id: e.id, shot: 'paper', x: e.x, y: e.y, tx: t.x, ty: t.y, side: e.side, noTracer: true });
+      return;
+    }
+    // Круп'є: кидає карту-бумеранг, що пробиває всіх ворогів на лінії!
+    if (e.special === 'PIERCE_LINE') {
+      const ang = Math.atan2(t.y - e.y, t.x - e.x);
+      const len = e.range + 1.2;
+      const ex = e.x + Math.cos(ang) * len, ey = e.y + Math.sin(ang) * len;
+      this.emit('cardThrow', { x0: e.x, y0: e.y, x1: ex, y1: ey, side: e.side });
+      for (const o of this.entities) {
+        if (!this.canTarget(e, o)) continue;
+        // Відстань від точки o до відрізка (e -> end)
+        const vx = ex - e.x, vy = ey - e.y;
+        const l2 = vx * vx + vy * vy || 1;
+        const proj = clamp(((o.x - e.x) * vx + (o.y - e.y) * vy) / l2, 0, 1);
+        const px = e.x + proj * vx, py = e.y + proj * vy;
+        if (Math.hypot(o.x - px, o.y - py) <= (e.splash || 0.9) + o.r) {
+          this.damage(o, dmg, { splash: true, side: e.side });
+        }
+      }
+      return;
+    }
+    // Охоронець із дробовиком: колосальна шкода впритул + відкидання ворогів назад!
+    if (e.special === 'KNOCKBACK_CLOSE') {
+      this.emit('shot', { id: e.id, shot: 'tommy', x: e.x, y: e.y, tx: t.x, ty: t.y, side: e.side });
+      const kb = CARD_MAP.unit_shotgun.knockback || 1.35;
+      for (const o of this.entities) {
+        if (!this.canTarget(e, o)) continue;
+        if (o === t || dist(o, t) <= (e.splash || 1.1)) {
+          this.damage(o, dmg, { splash: o !== t, side: e.side });
+          if (o.alive && o.kind === 'unit' && !o.vehicle) {
+            const ka = Math.atan2(o.y - e.y, o.x - e.x);
+            o.x = clamp(o.x + Math.cos(ka) * kb, 0.4, ARENA.W - 0.4);
+            o.y = clamp(o.y + Math.sin(ka) * kb, 0.4, ARENA.H - 0.4);
+          }
+        }
+      }
+      return;
+    }
+    // Підпалювач: вогняний конус ближнього сплешу
+    if (e.special === 'FLAME_CONE') {
+      this.emit('flame', { x0: e.x, y0: e.y, x1: t.x, y1: t.y, r: e.splash || 1.6 });
+      this.damage(t, dmg, { side: e.side });
+      for (const o of this.entities) {
+        if (o === t || !this.canTarget(e, o)) continue;
+        if (dist(o, t) <= (e.splash || 1.6)) this.damage(o, dmg, { splash: true, side: e.side });
+      }
       return;
     }
     const ranged = e.range >= 2 || e.kind === 'tower' || e.kind === 'building';
     if (ranged) {
       this.emit('shot', { id: e.id, shot: e.shot || 'pistol', x: e.x, y: e.y, tx: t.x, ty: t.y, side: e.side, tower: e.kind === 'tower', flying: e.flying });
-      this.damage(t, e.dmg, { side: e.side });
+      this.damage(t, dmg, { side: e.side });
       if (e.special === 'CONE_SPLASH') {
         for (const o of this.entities) {
           if (o === t || !this.canTarget(e, o)) continue;
-          if (dist(o, t) <= e.splash) this.damage(o, e.dmg, { splash: true, side: e.side });
+          if (dist(o, t) <= e.splash) this.damage(o, dmg, { splash: true, side: e.side });
         }
       }
     } else {
       const dog = e.look && e.look.type === 'dog';
+      // Бульдозер: x2 шкода по будівлях та вежах!
+      const finalDmg = (e.special === 'DOUBLE_BLDG_DMG' && t.isBuilding) ? dmg * 2 : dmg;
       this.emit('melee', { id: e.id, x: e.x, y: e.y, tx: t.x, ty: t.y, dog });
-      this.damage(t, e.dmg, { side: e.side });
+      this.damage(t, finalDmg, { side: e.side });
     }
   }
 
@@ -656,7 +772,8 @@ export class Game {
     const dx = wp.x - e.x, dy = wp.y - e.y;
     const d = Math.hypot(dx, dy);
     if (d < 0.001) { e.moving = false; return; }
-    const step = Math.min(d, e.speed * dt);
+    const spd = e.speed * (e.slowT > 0 ? 0.65 : 1);
+    const step = Math.min(d, spd * dt);
     e.x += dx / d * step;
     e.y += dy / d * step;
     const ta = Math.atan2(dy, dx);

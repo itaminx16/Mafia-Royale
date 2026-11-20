@@ -87,9 +87,9 @@ export class Bot {
     if (small.length >= 3) {
       const c = this._cluster(small, 2.5);
       if (c.n >= 3) {
-        const mol = hand.find(h => h.id === 'spell_molotov' && this.affordable(h));
+        const mol = hand.find(h => (h.id === 'spell_molotov' || h.id === 'spell_teargas') && this.affordable(h));
         if (mol && this.play(mol, c.x, c.y)) return;
-        const tommy = hand.find(h => h.id === 'unit_tommy' && this.affordable(h));
+        const tommy = hand.find(h => (h.id === 'unit_tommy' || h.id === 'unit_arsonist' || h.id === 'unit_croupier') && this.affordable(h));
         if (tommy && this.play(tommy, c.x, this.fromY(Math.max(1.5, this.Y(c.y) - 3)))) return;
         const splash = hand.find(h => (h.id === 'bldg_barricade' || h.id === 'unit_medic') && this.affordable(h));
         if (splash && this.play(splash, c.x, this.fromY(Math.max(2, this.Y(c.y) - 2.5)))) return;
@@ -132,6 +132,16 @@ export class Bot {
     if (molV && enemies.length >= 3) {
       const c = this._cluster(enemies, 3);
       if (c.n >= 3 && c.hp >= 700) { if (this.play(molV, c.x, c.y)) return; }
+    }
+
+    // ---------- Закляття «Вендета»: підсилити власний пуш ----------
+    const vend = hand.find(h => h.id === 'spell_vendetta' && this.affordable(h));
+    if (vend && my.length >= 2) {
+      const push = my.filter(u => this.Y(u.y) > ARENA.riverY0 - 1);
+      if (push.length >= 2) {
+        const c = this._cluster(push, 3.5);
+        if (c.n >= 2 && this.play(vend, c.x, c.y)) return;
+      }
     }
 
     // ---------- 1) Накопичення та атака ----------
@@ -322,25 +332,31 @@ export function makeBotDeck() {
 //  Бот завжди тримається близько до середнього рівня колоди гравця,
 //  щоб не бути ні занадто слабким, ні нечесно сильним на будь-якій арені.
 // =====================================================================
-export function computeBotMatchup(playerAvgLevel, trophies, arenaIdx, mode = 'ranked') {
-  // 1) Рівень карт бота: прив'язаний до рівня колоди гравця (з мінімальним розкидом ±0..1)
+export function computeBotMatchup(playerAvgLevel, trophies, arenaIdx, mode = 'ranked', recentResults = []) {
+  // 1) Рівень карт бота: точно відповідає середньому рівню колоди гравця (чесний баланс)
   const baseLv = Math.max(1, Math.min(LEVEL_MAX, Math.round(playerAvgLevel)));
   const levels = {};
   for (const c of CARDS) {
-    // 70% карт такого ж рівня, 15% на 1 нижче (якщо >1), 15% на 1 вище (якщо гравець має 200+ кубків)
     let lv = baseLv;
     const r = Math.random();
-    if (r < 0.15 && lv > 1) lv -= 1;
-    else if (r > 0.88 && trophies >= 150 && lv < LEVEL_MAX) lv += 1;
+    if (r < 0.14 && lv > 1) lv -= 1;
+    else if (r > 0.90 && trophies >= 200 && lv < LEVEL_MAX) lv += 1;
     levels[c.id] = lv;
   }
 
-  // 2) Складність AI (0..4): плавно зростає від кубків та арени
-  const trophyTier = Math.min(4, Math.floor(trophies / 180));
-  const difficulty = Math.max(0, Math.min(4, Math.round((arenaIdx + trophyTier) / 2)));
+  // 2) Динамічний MMR за останніми 6 боями (щоб бот ніколи не був занадто слабким чи неможливим)
+  const last = Array.isArray(recentResults) ? recentResults.slice(-6) : [];
+  let formDelta = 0;
+  const wins = last.filter(x => x === 'W').length;
+  const losses = last.filter(x => x === 'L').length;
+  if (last.length >= 3 && wins >= last.length - 1) formDelta = 1;       // серія перемог -> бот зібраніший
+  else if (last.length >= 2 && losses >= last.length - 1) formDelta = -1; // серія поразок -> трохи спокійніший темп
 
-  // 3) Колода та вежа: 65% шанс взяти готовий тактичний архетип, 35% — згенеровану збалансовану колоду
-  if (mode !== 'draft' && Math.random() < 0.65) {
+  const trophyTier = Math.min(4, Math.floor(trophies / 180));
+  const difficulty = Math.max(0, Math.min(4, Math.round((arenaIdx + trophyTier) / 2) + formDelta));
+
+  // 3) Логічні синергійні колоди (80% тактичний архетип, 20% збалансована збірка)
+  if (mode !== 'draft' && Math.random() < 0.80) {
     const arch = BOT_ARCHETYPES[Math.floor(Math.random() * BOT_ARCHETYPES.length)];
     return {
       name: arch.name,

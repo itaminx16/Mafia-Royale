@@ -19,7 +19,7 @@ for (let i = 0; i < N; i++) {
   const bP = new Bot(g, 'P', 2), bE = new Bot(g, 'E', 2);
   const dt = 1 / 60;
   let steps = 0;
-  while (!g.over && steps < 60 * 200) {
+  while (!g.over && steps < 60 * 260) {
     bP.update(dt); bE.update(dt);
     g.update(dt);
     for (const ev of g.events) if (ev.type === 'play') stats.plays[ev.cardId] = (stats.plays[ev.cardId] || 0) + 1;

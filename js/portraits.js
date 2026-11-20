@@ -160,6 +160,66 @@ const ART = {
     <rect x="22" y="40" width="14" height="12" fill="#fde047" opacity=".85" ${O}/><rect x="64" y="40" width="14" height="12" fill="#fde047" opacity=".85" ${O}/>
     <g transform="rotate(15 76 74)"><rect x="66" y="64" width="20" height="20" rx="4" fill="#f8fafc" ${O}/><circle cx="71" cy="69" r="2" fill="#111"/><circle cx="81" cy="79" r="2" fill="#111"/><circle cx="76" cy="74" r="2" fill="#111"/></g>`,
 
+  // ---- 8 Нових карт ----
+  unit_arsonist: () => `
+    <rect x="14" y="46" width="16" height="36" rx="6" fill="#ea580c" ${O}/>
+    ${shoulders('#7c2d12')}
+    <ellipse cx="50" cy="46" rx="17" ry="19" fill="#292524" ${O}/>
+    <circle cx="43" cy="43" r="5" fill="#fde047" ${O}/><circle cx="57" cy="43" r="5" fill="#fde047" ${O}/>
+    <circle cx="50" cy="56" r="7" fill="#52525b" ${O}/>
+    <rect x="52" y="70" width="32" height="8" rx="2" fill="#27272a" ${O}/>
+    <path d="M84 74 Q94 60 96 72 Q98 84 84 76 Z" fill="#f97316" ${O}/>
+    <circle cx="90" cy="73" r="4" fill="#fde047"/>`,
+  unit_heli: () => `
+    <rect x="10" y="20" width="80" height="5" rx="2" fill="#cbd5e1" ${O}/>
+    <rect x="47" y="24" width="6" height="12" fill="#334155" ${O}/>
+    <path d="M22 52 Q26 34 56 34 Q82 34 84 54 Q84 68 58 68 L26 68 Z" fill="#1e3a8a" ${O}/>
+    <path d="M56 38 Q76 38 78 52 L56 52 Z" fill="#7dd3fc" ${O}/>
+    <rect x="10" y="50" width="20" height="7" fill="#1e3a8a" ${O}/>
+    <circle cx="10" cy="53" r="7" fill="#94a3b8" opacity=".8" ${O}/>
+    <path d="M32 76 H76 M42 68 V76 M66 68 V76" stroke="#111" stroke-width="4"/>
+    <circle cx="44" cy="44" r="4" fill="#ef4444"/><circle cx="36" cy="44" r="4" fill="#3b82f6"/>`,
+  spell_teargas: () => `
+    <circle cx="32" cy="40" r="18" fill="#84cc16" opacity=".65"/>
+    <circle cx="66" cy="38" r="20" fill="#a3e635" opacity=".6"/>
+    <circle cx="50" cy="28" r="18" fill="#bef264" opacity=".65"/>
+    <rect x="38" y="42" width="24" height="44" rx="5" fill="#3f6212" ${O}/>
+    <rect x="42" y="34" width="16" height="9" rx="2" fill="#71717a" ${O}/>
+    <rect x="38" y="58" width="24" height="10" fill="#fde047" stroke="#111" stroke-width="2"/>
+    <text x="50" y="66" font-family="Impact,sans-serif" font-size="9" text-anchor="middle" fill="#111">GAS</text>`,
+  unit_bulldozer: () => `
+    <rect x="14" y="66" width="54" height="18" rx="8" fill="#27272a" ${O}/>
+    <circle cx="24" cy="75" r="5" fill="#71717a"/><circle cx="41" cy="75" r="5" fill="#71717a"/><circle cx="58" cy="75" r="5" fill="#71717a"/>
+    <rect x="18" y="38" width="46" height="30" rx="4" fill="#eab308" ${O}/>
+    <rect x="24" y="24" width="26" height="18" rx="3" fill="#ca8a04" ${O}/>
+    <rect x="34" y="28" width="13" height="10" fill="#7dd3fc" stroke="#111" stroke-width="2"/>
+    <path d="M68 42 L86 38 L88 84 L68 82 Z" fill="#94a3b8" ${O}/>
+    <path d="M62 60 L72 60" stroke="#111" stroke-width="5"/>`,
+  unit_croupier: () => `
+    ${shoulders('#18181b', '<path d="M44 70 L50 84 L56 70" fill="#f8fafc" stroke="#111" stroke-width="2"/><path d="M48 74 L52 74 L53 90 L47 90 Z" fill="#dc2626"/>')}
+    ${face(50, 48, 1, '#e6bf9c')}${eyes(50, 48, 1)}
+    <path d="M30 38 Q50 28 70 38 L74 44 Q50 38 26 44 Z" fill="#16a34a" ${O}/>
+    <g transform="rotate(-18 78 68)"><rect x="66" y="54" width="22" height="30" rx="3" fill="#f8fafc" ${O}/><text x="77" y="74" font-family="Georgia,serif" font-size="16" text-anchor="middle" fill="#111">♠</text></g>`,
+  unit_shotgun: () => `
+    ${shoulders('#374151')}
+    ${face(50, 46, 1, '#d2a07a')}
+    <path d="M32 38 Q50 20 68 38 Z" fill="#111827" ${O}/><rect x="28" y="35" width="44" height="6" rx="2" fill="#1f2937" ${O}/>
+    <rect x="36" y="42" width="28" height="7" rx="2" fill="#09090b"/>
+    <g transform="rotate(-12 52 78)"><rect x="14" y="72" width="58" height="9" rx="2" fill="#27272a" ${O}/><rect x="64" y="70" width="24" height="15" rx="3" fill="#7c2d12" ${O}/><rect x="34" y="79" width="16" height="5" rx="2" fill="#7c2d12" ${O}/></g>`,
+  unit_limo: () => `
+    <rect x="8" y="42" width="84" height="30" rx="7" fill="#111827" ${O}/>
+    <path d="M20 42 L30 28 H72 L82 42 Z" fill="#1f2937" ${O}/>
+    <rect x="30" y="32" width="14" height="9" fill="#38bdf8" opacity=".6"/><rect x="47" y="32" width="12" height="9" fill="#38bdf8" opacity=".6"/><rect x="62" y="32" width="12" height="9" fill="#38bdf8" opacity=".6"/>
+    <rect x="10" y="56" width="80" height="4" fill="#f59e0b"/>
+    <circle cx="24" cy="74" r="8" fill="#18181b" ${O}/><circle cx="76" cy="74" r="8" fill="#18181b" ${O}/>
+    <circle cx="24" cy="74" r="3" fill="#f59e0b"/><circle cx="76" cy="74" r="3" fill="#f59e0b"/>`,
+  spell_vendetta: () => `
+    <circle cx="50" cy="50" r="36" fill="#7f1d1d" opacity=".7" ${O}/>
+    <path d="M24 76 L76 24 M76 76 L24 24" stroke="#e5e7eb" stroke-width="6" stroke-linecap="round"/>
+    <path d="M24 76 L76 24 M76 76 L24 24" stroke="#111" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="50" cy="48" r="18" fill="#dc2626" ${O}/>
+    <text x="50" y="55" font-family="Impact,Arial Black,sans-serif" font-size="16" text-anchor="middle" fill="#fde047">+40%</text>`,
+
   // ---- Вежі ----
   tower_mafia_mansion: () => `
     <path d="M10 46 L50 18 L90 46 Z" fill="#5b3a29" ${O}/>

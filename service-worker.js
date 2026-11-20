@@ -1,12 +1,13 @@
 // =====================================================================
-//  SERVICE WORKER — 100% Офлайн-робота + Автооновлення при появі мережі
+//  SERVICE WORKER — Офлайн-кеш + Примусове оновлення без застарілого HTTP-кешу
 // =====================================================================
-const CACHE_NAME = 'mafia-royale-v5';
+const CACHE_NAME = 'mafia-royale-v7';
 const ASSETS = [
   './',
   './index.html',
   './style.css',
   './manifest.json',
+  './version.json',
   './js/data.js',
   './js/storage.js',
   './js/audio.js',
@@ -20,16 +21,19 @@ const ASSETS = [
   './icons/icon-512.png',
 ];
 
-// 1) При встановленні — кешуємо ВСІ файли гри для миттєвої офлайн-роботи
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(ASSETS))
-      .then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then(async cache => {
+      for (const url of ASSETS) {
+        try {
+          const resp = await fetch(new Request(url, { cache: 'reload' }));
+          if (resp && resp.ok) await cache.put(url, resp);
+        } catch (e) {}
+      }
+    }).then(() => self.skipWaiting())
   );
 });
 
-// 2) При активації — видаляємо старі кеші і беремо контроль над усіма вкладками
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys()
@@ -38,17 +42,26 @@ self.addEventListener('activate', event => {
   );
 });
 
-// 3) Network-First з миттєвим відкатом на кеш:
-//    - Якщо є інтернет -> качає найсвіжішу версію і оновлює кеш.
-//    - Якщо інтернету немає (або сервер вимкнено) -> миттєво відкриває з кешу!
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   const req = event.request;
+  const url = new URL(req.url);
 
-  // Навігація по сторінці (відкриття додатку)
+  // version.json завжди беремо напряму з мережі (ніколи не підсовуємо стару версію!)
+  if (url.pathname.endsWith('version.json')) {
+    event.respondWith(fetch(req, { cache: 'no-store' }).catch(() => caches.match('./version.json')));
+    return;
+  }
+
   if (req.mode === 'navigate') {
     event.respondWith(
-      fetch(req)
+      fetch(req, { cache: 'no-cache' })
         .then(resp => {
           if (resp && resp.status === 200) {
             const copy = resp.clone();
@@ -61,9 +74,8 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Статичні ресурси (JS, CSS, SVG, PNG, manifest)
   event.respondWith(
-    fetch(req)
+    fetch(req, { cache: 'no-cache' })
       .then(resp => {
         if (resp && resp.status === 200) {
           const copy = resp.clone();

@@ -4,9 +4,9 @@
 //       Повноекранний бій, Плавна висадка пальцем і радіус споруд
 // =====================================================================
 import {
-  CARDS, CARD_MAP, TOWERS, TOWER_MAP, ARENAS, CHESTS, RARITY,
+  VERSION, CARDS, CARD_MAP, TOWERS, TOWER_MAP, ARENAS, CHESTS, RARITY,
   ECONOMY, LEVEL_MAX, CARD_CAPACITY_TOTAL, CARD_CAPACITY_PER_ARENA,
-  STORY_CHAPTERS, GAME_MODES, statAtLevel, arenaForTrophies,
+  STORY_CAMPAIGNS, STORY_CHAPTERS, GAME_MODES, statAtLevel, arenaForTrophies,
 } from './data.js';
 import { Save, rollChestType, generateChest, applyChest } from './storage.js';
 import { Audio } from './audio.js';
@@ -42,6 +42,7 @@ class AppUI {
     this.raf = null;
     this.lastTs = 0;
     this.activeStoryChapter = null;
+    this.activeStorySabotage = false;
 
     // Стан вибору/плавного перетягування карти та інспекції будівель
     this.selectedHandIdx = null;
@@ -90,6 +91,9 @@ class AppUI {
     } else {
       this.showAuthScreen();
     }
+
+    // Автоматична перевірка оновлень через 1.5с після запуску (якщо є інтернет)
+    setTimeout(() => this.checkForUpdates(false), 1500);
   }
 
   _cacheDOM() {
@@ -562,44 +566,86 @@ class AppUI {
   }
 
   // ==================================================================
-  //  МОДАЛКА ІГРОВИХ РЕЖИМІВ ТА СЮЖЕТНОЇ КАМПАНІЇ («Хроніки Синдикату»)
+  //  МОДАЛКА ІГРОВИХ РЕЖИМІВ ТА СЮЖЕТУ (2 ГІЛКИ: МАФІЯ / СИЛОВИКИ + ДИВЕРСІЇ)
   // ==================================================================
   openModesModal(focusStory = false) {
     const d = Save.data;
     const renderBody = (showStory) => {
       if (showStory) {
+        const branchKey = d.storyBranch === 'police' ? 'police' : 'mafia';
+        const camp = STORY_CAMPAIGNS[branchKey];
+        const chapters = camp.chapters;
+
         this.el.modesModalBody.innerHTML = `
           <div class="modal-title">
-            <h3>📜 Сюжет: Хроніки Синдикату</h3>
+            <h3>📜 Сюжетна кампанія</h3>
             <button class="btn-ghost-sm" id="btn-modes-back">← Режими</button>
           </div>
-          <p class="modal-desc">Проходьте 5 районів міста, перемагайте босів із унікальними колодами та заробляйте золото за першу перемогу.</p>
-          ${STORY_CHAPTERS.map(ch => {
+          <div class="auth-tabs" style="margin-bottom:10px">
+            <button class="auth-tab ${branchKey === 'mafia' ? 'active' : ''}" data-branch="mafia">🎩 Мафія</button>
+            <button class="auth-tab ${branchKey === 'police' ? 'active' : ''}" data-branch="police">🚔 Силовики</button>
+          </div>
+          <p class="modal-desc">${camp.subtitle}.<br/><em>Поразка запускає «Вендету» (+50% золота за реванш) і відкриває Диверсію для ослаблення боса.</em></p>
+          ${chapters.map(ch => {
             const done = !!d.storyDone[ch.id];
-            const prevDone = ch.num === 1 || !!d.storyDone[`ch_${ch.num - 1}`] || d.isAdmin;
+            const prevId = `${ch.branch === 'mafia' ? 'm' : 'p'}_${ch.num - 1}`;
+            const prevDone = ch.num === 1 || !!d.storyDone[prevId] || d.isAdmin;
+            const st = d.storyState[ch.id] || { losses: 0, vendetta: false, sabotageDone: false };
+            const effLv = Math.max(1, ch.botLevel - (st.sabotageDone ? 1 : 0));
+            const goldRew = st.vendetta ? Math.round(ch.rewardGold * 1.5) : ch.rewardGold;
             return `
-              <div class="story-card ${done ? 'done' : ''}">
+              <div class="story-card ${done ? 'done' : ''}" style="${st.vendetta && !done ? 'border-color:#ef4444' : ''}">
                 <div class="mode-head">
                   <span>${ch.title}</span>
-                  <span>${done ? '✅ Пройдено' : `🪙 +${ch.rewardGold}`}</span>
+                  <span>${done ? '✅ Пройдено' : (st.vendetta ? `🔥 🪙 +${goldRew}` : `🪙 +${goldRew}`)}</span>
                 </div>
-                <div class="mode-desc" style="margin-bottom:6px"><strong>Бос:</strong> ${ch.boss} (Рів. ${ch.botLevel})<br/>${ch.story}</div>
-                <button class="btn-primary ${prevDone ? '' : 'disabled'}" data-play-story="${ch.id}" style="width:100%">
-                  ${prevDone ? (done ? '⚔️ Переграти главу' : '⚔️ Почати главу') : '🔒 Пройдіть попередню главу'}
-                </button>
+                <div class="mode-desc" style="margin-bottom:6px">
+                  <strong>Бос:</strong> ${ch.boss} (Рів. ${effLv}${st.sabotageDone ? ' — ослаблений диверсією!' : ''})<br/>
+                  ${ch.story}
+                  ${st.vendetta && !done ? `<div style="color:#fca5a5; margin-top:4px"><strong>🔥 ВЕНДЕТА (поразок: ${st.losses}):</strong> ${ch.taunt}</div>` : ''}
+                </div>
+                <div style="display:flex; flex-direction:column; gap:6px">
+                  <button class="btn-primary ${prevDone ? '' : 'disabled'}" data-play-story="${ch.id}" style="width:100%">
+                    ${prevDone ? (done ? '⚔️ Переграти главу' : (st.vendetta ? '🔥 Реванш (Вендета +50% 🪙)' : '⚔️ Почати главу')) : '🔒 Пройдіть попередню главу'}
+                  </button>
+                  ${prevDone && !done && st.losses > 0 && !st.sabotageDone ? `
+                    <button class="btn-secondary" data-play-sabotage="${ch.id}" style="width:100%">
+                      🕵️ Диверсія: ${ch.sabotageTitle} (послабить боса -1 рів.)
+                    </button>
+                  ` : ''}
+                </div>
               </div>
             `;
           }).join('')}
         `;
+
         document.getElementById('btn-modes-back').addEventListener('click', () => renderBody(false));
+        this.el.modesModalBody.querySelectorAll('[data-branch]').forEach(b => {
+          b.addEventListener('click', () => {
+            Audio.play('click');
+            d.storyBranch = b.dataset.branch;
+            Save.save();
+            renderBody(true);
+          });
+        });
         this.el.modesModalBody.querySelectorAll('[data-play-story]').forEach(btn => {
           btn.addEventListener('click', () => {
-            const ch = STORY_CHAPTERS.find(c => c.id === btn.dataset.playStory);
-            const prevDone = ch.num === 1 || !!d.storyDone[`ch_${ch.num - 1}`] || d.isAdmin;
+            const ch = chapters.find(c => c.id === btn.dataset.playStory);
+            const prevId = `${ch.branch === 'mafia' ? 'm' : 'p'}_${ch.num - 1}`;
+            const prevDone = ch.num === 1 || !!d.storyDone[prevId] || d.isAdmin;
             if (!prevDone) { Audio.play('error'); return; }
             Audio.play('select');
             this.el.modesModal.classList.add('hidden');
-            this.startBattle({ mode: 'story', chapter: ch });
+            this.startBattle({ mode: 'story', chapter: ch, isSabotage: false });
+          });
+        });
+        this.el.modesModalBody.querySelectorAll('[data-play-sabotage]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const ch = chapters.find(c => c.id === btn.dataset.playSabotage);
+            if (!ch) return;
+            Audio.play('select');
+            this.el.modesModal.classList.add('hidden');
+            this.startBattle({ mode: 'story', chapter: ch, isSabotage: true });
           });
         });
         return;
@@ -620,7 +666,7 @@ class AppUI {
           </div>
         `).join('')}
         <div class="modal-actions" style="margin-top:8px">
-          <button class="btn-gold" id="btn-open-story-chapters">📜 Відкрити глави Сюжету (5 глав)</button>
+          <button class="btn-gold" id="btn-open-story-chapters">📜 Сюжет: Мафія / Силовики (10 глав)</button>
           <button class="btn-ghost" data-close-modal>Готово</button>
         </div>
       `;
@@ -719,6 +765,10 @@ class AppUI {
         <span>⛶ Повноекранний режим</span>
         <button id="set-fs" class="toggle-btn ${isFs ? '' : 'off'}">${isFs ? 'АКТИВНИЙ' : 'УВІМКНУТИ'}</button>
       </div>
+      <div class="settings-row">
+        <span>📦 Версія гри: <strong>v${VERSION}</strong></span>
+        <button id="set-check-update" class="toggle-btn" style="background:#2563eb">🔄 Перевірити</button>
+      </div>
       <div class="modal-actions" style="margin-top:12px">
         ${d.isAdmin ? `<button id="btn-open-admin" class="btn-gold">👑 Адмін-панель (Itaminx)</button>` : ''}
         <button id="btn-logout" class="btn-secondary">🚪 Вийти з акаунту (${d.username})</button>
@@ -749,6 +799,12 @@ class AppUI {
     document.getElementById('set-fs').addEventListener('click', () => {
       this._toggleFullscreen();
       setTimeout(() => this.openSettingsModal(), 250);
+    });
+
+    document.getElementById('set-check-update').addEventListener('click', () => {
+      Audio.play('click');
+      this.el.settingsModal.classList.add('hidden');
+      this.checkForUpdates(true);
     });
 
     const admBtn = document.getElementById('btn-open-admin');
@@ -786,8 +842,8 @@ class AppUI {
       <p class="modal-desc">Режим тестування: безкоштовний доступ до всіх ресурсів, карт, арен та кейсів.</p>
       <div class="modal-actions">
         <button id="adm-grant-all" class="btn-gold">💎 Отримати все (+50 000 🪙 та +100 усіх карт)</button>
-        <button id="adm-max-cards" class="btn-primary">⬆️ Прокачати всі 18 карт до 6 рівня</button>
-        <button id="adm-unlock-story" class="btn-secondary">📜 Відкрити всі 5 глав Сюжету</button>
+        <button id="adm-max-cards" class="btn-primary">⬆️ Прокачати всі ${CARDS.length} карт до 6 рівня</button>
+        <button id="adm-unlock-story" class="btn-secondary">📜 Відкрити всі ${STORY_CHAPTERS.length} глав Сюжету</button>
         <div class="settings-row" style="margin-top:4px; flex-wrap:wrap; gap:6px">
           <span>🏆 Швидко виставити кубки:</span>
           <div style="display:flex; gap:4px; flex-wrap:wrap">
@@ -849,6 +905,84 @@ class AppUI {
       if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
     } else {
       if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+    }
+  }
+
+  // ==================================================================
+  //  СИСТЕМА АВТООНОВЛЕННЯ З ПРОГРЕС-БАРОМ (0% -> 100% -> Перезапуск)
+  // ==================================================================
+  async checkForUpdates(manual = false) {
+    if (this._updating || this.game) return;
+    if (!navigator.onLine) {
+      if (manual) alert('Немає підключення до інтернету. Ви граєте в офлайн-режимі (v' + VERSION + ').');
+      return;
+    }
+    try {
+      const resp = await fetch(`./version.json?t=${Date.now()}`, { cache: 'no-store' });
+      if (!resp.ok) {
+        if (manual) alert('Не вдалося перевірити оновлення (перевірте інтернет).');
+        return;
+      }
+      const info = await resp.json();
+      if (!info || !info.version) return;
+
+      if (info.version === VERSION) {
+        if (manual) alert(`У вас уже найновіша версія Mafia Royale (v${VERSION})!`);
+        return;
+      }
+
+      // Знайдено нову версію! Показуємо прогрес-бар і завантажуємо всі свіжі файли в кеш
+      this._updating = true;
+      const overlay = document.getElementById('update-overlay');
+      const title = document.getElementById('update-title');
+      const notes = document.getElementById('update-notes');
+      const fill = document.getElementById('update-bar-fill');
+      const status = document.getElementById('update-status');
+
+      title.textContent = `Оновлення до v${info.version}`;
+      notes.textContent = info.notes || 'Завантаження нових файлів гри...';
+      fill.style.width = '5%';
+      status.textContent = 'Підключення... 5%';
+      overlay.classList.remove('hidden');
+
+      const files = [
+        './index.html', './style.css', './manifest.json', './version.json',
+        './js/data.js', './js/storage.js', './js/audio.js', './js/portraits.js',
+        './js/game.js', './js/ai.js', './js/renderer.js', './js/ui.js',
+        './icons/icon-192.png', './icons/icon-512.png',
+      ];
+
+      // Очищаємо старий кеш і примусово качаємо кожен файл із реальним прогресом
+      let cache = null;
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(k => caches.delete(k)));
+        cache = await caches.open(`mafia-royale-v${info.version}`);
+      }
+
+      for (let i = 0; i < files.length; i++) {
+        const f = files[i];
+        const pct = Math.round(((i + 1) / files.length) * 95);
+        status.textContent = `Завантаження (${i + 1}/${files.length})... ${pct}%`;
+        fill.style.width = `${pct}%`;
+        try {
+          const r = await fetch(`${f}?v=${info.version}&t=${Date.now()}`, { cache: 'reload' });
+          if (r && r.ok && cache) await cache.put(f, r.clone());
+        } catch (e) {}
+      }
+
+      if (window._mrSwReg) {
+        try { await window._mrSwReg.update(); } catch (e) {}
+      }
+
+      fill.style.width = '100%';
+      status.textContent = 'Готово! Перезапуск гри... 100%';
+      setTimeout(() => {
+        window.location.reload();
+      }, 650);
+    } catch (e) {
+      this._updating = false;
+      if (manual) alert('Помилка перевірки оновлень.');
     }
   }
 
@@ -1198,9 +1332,10 @@ class AppUI {
   // ==================================================================
   //  БІЙ НА CANVAS (Плавна висадка, радіус споруд, 4 фази економіки)
   // ==================================================================
-  startBattle({ mode = 'ranked', chapter = null } = {}) {
+  startBattle({ mode = 'ranked', chapter = null, isSabotage = false } = {}) {
     const d = Save.data;
     this.activeStoryChapter = chapter;
+    this.activeStorySabotage = !!isSabotage;
 
     let arena = ARENAS.find(a => a.id === d.selectedArena) || arenaForTrophies(d.trophies);
     let playerDeck = [...d.deck];
@@ -1210,12 +1345,16 @@ class AppUI {
 
     if (mode === 'story' && chapter) {
       arena = ARENAS.find(a => a.id === chapter.arenaId) || arena;
+      const st = d.storyState[chapter.id] || { losses: 0, vendetta: false, sabotageDone: false };
       botDeck = [...chapter.deck];
       botTower = chapter.tower;
+      const lv = isSabotage
+        ? Math.max(1, chapter.botLevel - 1)
+        : Math.max(1, chapter.botLevel - (st.sabotageDone ? 1 : 0));
       botLevels = {};
-      for (const c of CARDS) botLevels[c.id] = chapter.botLevel;
-      botDiff = Math.min(4, chapter.num - 1);
-      botLabel = `Бос: ${chapter.boss}`;
+      for (const c of CARDS) botLevels[c.id] = lv;
+      botDiff = isSabotage ? Math.max(0, chapter.num - 2) : Math.min(4, chapter.num - 1);
+      botLabel = isSabotage ? `Диверсія: ${chapter.boss}` : `Бос: ${chapter.boss}`;
     } else if (mode === 'draft') {
       playerDeck = makeBotDeck();
       playerTower = TOWERS[Math.floor(Math.random() * TOWERS.length)].id;
@@ -1229,7 +1368,7 @@ class AppUI {
       botLabel = 'Сліпий Контракт';
     } else {
       const arIdx = ARENAS.indexOf(arena);
-      const m = computeBotMatchup(Save.avgDeckLevel(), d.trophies, arIdx, mode);
+      const m = computeBotMatchup(Save.avgDeckLevel(), d.trophies, arIdx, mode, d.stats.recentResults);
       botDeck = m.deck;
       botTower = m.tower;
       botLevels = m.levels;
@@ -1517,12 +1656,16 @@ class AppUI {
     let title = 'НІЧИЯ';
     let badgeClass = 'draw';
     let wonChest = null;
+    let storyNote = '';
+
+    st.recentResults = Array.isArray(st.recentResults) ? st.recentResults : [];
 
     if (res.winner === 'P') {
       st.wins++;
       st.streak = (st.streak || 0) + 1;
       if (st.streak > (st.bestStreak || 0)) st.bestStreak = st.streak;
       if (res.crownsP >= 3) st.threeCrownWins = (st.threeCrownWins || 0) + 1;
+      if (mode !== 'story') st.recentResults = [...st.recentResults, 'W'].slice(-6);
 
       title = 'ПЕРЕМОГА!';
       badgeClass = 'win';
@@ -1530,15 +1673,27 @@ class AppUI {
 
       if (mode === 'story' && this.activeStoryChapter) {
         const ch = this.activeStoryChapter;
-        if (!d.storyDone[ch.id]) {
-          d.storyDone[ch.id] = true;
-          bonusGold = ch.rewardGold;
+        const cs = d.storyState[ch.id] || { losses: 0, vendetta: false, sabotageDone: false };
+        if (this.activeStorySabotage) {
+          cs.sabotageDone = true;
+          d.storyState[ch.id] = cs;
+          bonusGold = 40;
           d.gold += bonusGold;
+          storyNote = `🕵️ Диверсія вдалася! Бос «${ch.boss}» ослаблений на -1 рівень для реваншу!`;
         } else {
-          bonusGold = 25;
-          d.gold += bonusGold;
+          if (!d.storyDone[ch.id]) {
+            d.storyDone[ch.id] = true;
+            bonusGold = cs.vendetta ? Math.round(ch.rewardGold * 1.5) : ch.rewardGold;
+            if (cs.vendetta) storyNote = '🔥 ВЕНДЕТА ЗДІЙСНЕНА! Отримано +50% золота за реванш!';
+            cs.vendetta = false;
+            d.storyState[ch.id] = cs;
+            d.gold += bonusGold;
+          } else {
+            bonusGold = 25;
+            d.gold += bonusGold;
+          }
+          wonChest = rollChestType();
         }
-        wonChest = rollChestType();
       } else {
         delta = arena.win;
         d.trophies += delta;
@@ -1550,15 +1705,24 @@ class AppUI {
     } else if (res.winner === 'E') {
       st.losses++;
       st.streak = 0;
+      if (mode !== 'story') st.recentResults = [...st.recentResults, 'L'].slice(-6);
       title = 'ПОРАЗКА';
       badgeClass = 'lose';
       Audio.play('defeat');
-      if (mode !== 'story') {
+      if (mode === 'story' && this.activeStoryChapter && !this.activeStorySabotage) {
+        const ch = this.activeStoryChapter;
+        const cs = d.storyState[ch.id] || { losses: 0, vendetta: false, sabotageDone: false };
+        cs.losses = (cs.losses || 0) + 1;
+        cs.vendetta = true;
+        d.storyState[ch.id] = cs;
+        storyNote = `🔥 Активовано «Вендету» (+50% золота за реванш) і відкрито Диверсію: «${ch.sabotageTitle}»!`;
+      } else if (mode !== 'story') {
         delta = arena.lose;
         d.trophies = Math.max(0, d.trophies + delta);
       }
     } else {
       st.draws++;
+      if (mode !== 'story') st.recentResults = [...st.recentResults, 'D'].slice(-6);
     }
 
     if (d.autoArena) {
@@ -1575,6 +1739,7 @@ class AppUI {
           <div class="rc-vs">:</div>
           <div class="rc-side"><span>СУПЕРНИК</span><strong>👑 ${res.crownsE}</strong></div>
         </div>
+        ${storyNote ? `<div class="modal-desc" style="color:#fde047; margin:0">${storyNote}</div>` : ''}
         ${mode !== 'story' ? `
           <div class="result-trophies">
             Авторитет: <strong>${sign} 🏆</strong> (Всього: ${d.trophies} 🏆)
@@ -1597,6 +1762,7 @@ class AppUI {
       this.raf = null;
       this.game = null;
       this.activeStoryChapter = null;
+    this.activeStorySabotage = false;
       this.el.resultModal.classList.add('hidden');
       this.el.battleScreen.classList.add('hidden');
       this.el.menuScreen.classList.remove('hidden');

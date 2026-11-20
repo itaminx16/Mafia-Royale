@@ -233,6 +233,19 @@
       </div>
     </div>
 
+    <!-- Оверлей автооновлення гри (показує реальний прогрес завантаження) -->
+    <div id="update-overlay" class="modal-backdrop hidden">
+      <div class="modal-window update-window">
+        <div class="update-icon">⬇️</div>
+        <h3 id="update-title">Оновлення Mafia Royale...</h3>
+        <p id="update-notes" class="modal-desc" style="text-align:center"></p>
+        <div class="update-bar-track">
+          <div id="update-bar-fill" class="update-bar-fill" style="width:0%"></div>
+        </div>
+        <div id="update-status" class="update-status">Підготовка... 0%</div>
+      </div>
+    </div>
+
     <!-- Універсальні модалки -->
     <div id="card-modal" class="modal-backdrop hidden"><div class="modal-window" id="card-modal-body"></div></div>
     <div id="chest-modal" class="modal-backdrop hidden"><div class="modal-window" id="chest-modal-body"></div></div>
@@ -249,12 +262,20 @@
   <script>
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker.js').then(reg => {
-          // Автоматична перевірка оновлень при поверненні інтернету або відкритті гри
-          window.addEventListener('online', () => reg.update().catch(() => {}));
+        navigator.serviceWorker.register('./service-worker.js', { updateViaCache: 'none' }).then(reg => {
+          window._mrSwReg = reg;
+          window.addEventListener('online', () => {
+            reg.update().catch(() => {});
+            if (window.MafiaRoyaleApp && window.MafiaRoyaleApp.checkForUpdates) {
+              window.MafiaRoyaleApp.checkForUpdates(false);
+            }
+          });
           document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible' && navigator.onLine) {
               reg.update().catch(() => {});
+              if (window.MafiaRoyaleApp && window.MafiaRoyaleApp.checkForUpdates) {
+                window.MafiaRoyaleApp.checkForUpdates(false);
+              }
             }
           });
         }).catch(() => {});

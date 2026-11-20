@@ -71,7 +71,9 @@ function defaultProfile(username = 'Новачок', password = '') {
     selectedArena: 'arena_1',
     autoArena: true, // автоматично піднімати арену за кубками
     gameMode: 'ranked',
-    storyDone: {},   // { ch_1: true, ... }
+    storyBranch: 'mafia',
+    storyDone: {},   // { m_1: true, p_1: true, ... }
+    storyState: {},  // { m_1: { losses: 0, vendetta: false, sabotageDone: false } }
     dailyDeals: { date: todayKey(), items: buildDailyDeals(todayKey()) },
     stats: {
       wins: 0,
@@ -85,6 +87,7 @@ function defaultProfile(username = 'Новачок', password = '') {
       bestStreak: 0,
       chestsOpened: 0,
       cardsPlayed: {},
+      recentResults: [], // останні 6 боїв ('W'|'L'|'D') для чесного MMR бота
     },
     settings: { sound: true, music: true, fullscreen: false },
   };
@@ -107,8 +110,11 @@ function normalizeProfile(d, fallbackName = 'Гравець') {
   if (!TOWER_MAP[d.tower]) d.tower = def.tower;
   d.stats = Object.assign(def.stats, d.stats || {});
   d.stats.cardsPlayed = d.stats.cardsPlayed || {};
+  d.stats.recentResults = Array.isArray(d.stats.recentResults) ? d.stats.recentResults.slice(-6) : [];
   d.settings = Object.assign(def.settings, d.settings || {});
   d.storyDone = d.storyDone || {};
+  d.storyState = d.storyState || {};
+  d.storyBranch = d.storyBranch || 'mafia';
 
   if (typeof d.trophies !== 'number') d.trophies = 0;
   if (typeof d.maxTrophies !== 'number' || d.maxTrophies < d.trophies) d.maxTrophies = d.trophies;
