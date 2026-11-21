@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Mafia Club: Online</title>
+  <meta name="theme-color" content="#14161d">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Mafia Club">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/svg+xml" href="/icon.svg">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app-container" style="padding-bottom: 46px;">
+  <!-- 1. ЕКРАН АВТОРИЗАЦІЇ -->
+  <div class="screen active" id="authScreen">
+    <div class="mafia-logo-wrap">
+      <div class="logo-card-box logo-gold" id="mainGameLogo">
+        <div class="logo-top-line"><span>♠ ♦ CLUB EDITION ♣ ♥</span></div>
+        <div class="logo-main-title card-deck-font">
+          <span class="logo-word-1">MAFIA CLUB</span>
+          <span class="logo-word-2">ONLINE</span>
+        </div>
+        <div class="logo-bottom-line" data-i18n="logo_bottom_line">МАФІЯ: КЛУБ ОНЛАЙН • ГРА ПОЧИНАЄТЬСЯ</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="auth-lang-bar">
+        <span class="auth-lang-lbl" data-i18n="auth_choose_lang">Мова / Language:</span>
+        <div class="auth-lang-pills">
+          <button type="button" class="auth-lang-btn active" id="authLangUaBtn" data-lang="ua">🇺🇦 Українська</button>
+          <button type="button" class="auth-lang-btn" id="authLangEnBtn" data-lang="en">🇬🇧 English</button>
+        </div>
+      </div>
+
+      <div class="auth-tabs">
+        <button type="button" class="auth-tab-btn active" id="tabLoginMode" data-i18n="auth_tab_login">🔑 Вхід</button>
+        <button type="button" class="auth-tab-btn" id="tabRegisterMode" data-i18n="auth_tab_reg">✨ Новий гравець</button>
+        <button type="button" class="auth-tab-btn" id="tabEmailMode" data-i18n="auth_tab_email">✉️ E-mail / Google</button>
+        <button type="button" class="auth-tab-btn" id="tabGuestMode" data-i18n="auth_tab_guest">🎭 Гість</button>
+      </div>
+
+      <p id="authModeHint" style="font-size:12px; color:#aaa; text-align:center; margin-bottom:10px;">
+        Увійди у свій існуючий профіль за нікнеймом та паролем.
+      </p>
+
+      <div id="emailAuthWrap" style="display:none;">
+        <div id="googleSignInSection" style="margin-bottom:10px; text-align:center;">
+          <div id="googleBtnMount" style="display:flex; justify-content:center;"></div>
+          <div id="googleFallbackNote" style="font-size:11px; color:#8892b0; margin-top:4px;"></div>
+        </div>
+        <input type="email" id="emailInput" placeholder="Ваш E-mail (example@gmail.com)..." data-i18n-placeholder="ph_email">
+        <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#cbd5e1; margin:4px 0 6px;">
+          <input type="checkbox" id="emailIsRegisterCheck"> <span data-i18n="auth_email_create_lbl">Створити новий акаунт по E-mail</span>
+        </label>
+      </div>
+
+      <div id="nickWrap">
+        <input type="text" id="nickInput" maxlength="10" placeholder="Введи свій нікнейм (до 10 символів)..." data-i18n-placeholder="ph_nickname">
+      </div>
+      <div id="passWrap">
+        <input type="password" id="passInput" placeholder="Введи пароль (мін. 6 символів)..." data-i18n-placeholder="ph_password">
+      </div>
+      
+      <div id="regExtraWrap" style="display:none; margin-top:4px;">
+        <label class="hint" data-i18n="auth_reg_gender">Обери стать персонажа:</label>
+        <select id="regGenderSelect">
+          <option value="male" data-i18n="gender_male">👨 Чоловік</option>
+          <option value="female" data-i18n="gender_female">👩 Жінка</option>
+          <option value="other" data-i18n="gender_other">🎭 Інше</option>
+        </select>
+        <input type="text" id="refCodeInput" placeholder="Нік друга, який запросив (+500 🪙 бонус, необов'язково)" data-i18n-placeholder="ph_ref_code">
+      </div>
+
+      <p id="authError" class="error-text"></p>
+      <button type="button" id="guestLoginBtn" data-i18n="auth_login_btn">Увійти в гру</button>
+      <button type="button" id="forgotPasswordBtn" class="secondary" style="margin-top:6px; padding:7px 12px; font-size:12px;" data-i18n="auth_forgot_btn">🔑 Забули пароль?</button>
+      <button type="button" id="installAppAuthBtn" class="secondary" style="margin-top:8px; padding:9px 12px; font-size:12px; border-color:#2a9d8f; color:#80ffdb; border-radius:8px; width:100%;" data-i18n="menu_install_app">📲 Встановити додаток (Телефон / ПК)</button>
+    </div>
+
+    <div id="cookieBanner" class="card" style="font-size:11px; color:#aaa; text-align:center;">
+      <span data-i18n="cookie_banner_text">🍪 Ми використовуємо localStorage та файли cookie для збереження вашої сесії та налаштувань (GDPR).</span>
+      <button type="button" id="acceptCookieBtn" class="secondary" style="padding:6px; font-size:11px; margin-top:6px;" data-i18n="cookie_accept_btn">Прийняти</button>
+    </div>
+    <div style="text-align:center; margin-top:8px;">
+      <button type="button" id="authVersionBtn" class="app-version-pill" data-i18n-title="version_changelog_hint" title="Що нового в оновленні">v1.2.2</button>
+    </div>
+  </div>
+
+  <!-- 2. ГОЛОВНЕ МЕНЮ -->
+  <div class="screen" id="mainMenuScreen" style="padding:0;">
+    <div id="happyHourBanner" style="display:none; background:linear-gradient(90deg,#e63946,#f4a261); color:#111; text-align:center; font-weight:bold; font-size:12px; padding:6px;" data-i18n="happy_hour_banner">
+      🔥 ЩАСЛИВІ ГОДИНИ (Київ): Зараз x2 Досвід та Монети за кожну гру!
+    </div>
+    <div class="top-profile top-profile-compact" id="topProfileArea">
+      <div class="compact-prof-row">
+        <div class="main-avatar" id="headerAvatarContainer" title="Натисни, щоб збільшити фото" data-i18n-title="title_avatar_zoom"></div>
+        <div class="compact-prof-meta">
+          <div class="nick-row" style="justify-content:flex-start; margin-top:0;">
+            <span id="headerNick">Гравець</span>
+            <span id="headerBadge" class="badge-100" style="display:none;" title="Натисни для деталей" data-i18n-title="title_badge_details">100</span>
+            <button type="button" id="appVersionBadge" class="app-version-pill" style="margin-left:auto;" data-i18n-title="version_changelog_hint" title="Що нового в оновленні">v1.2.2</button>
+          </div>
+          <div id="headerTitleBadge" style="font-size:11px; color:#f4a261; font-weight:bold; text-align:left;"></div>
+          <div class="bio-text" id="headerBio" style="text-align:left; margin:2px 0 0;"></div>
+        </div>
+      </div>
+      <div class="stats-bar" id="openProfileStatsBtn">
+        <div><span data-i18n="stat_level_lbl">Рівень </span><span id="headerLevel">1</span></div>
+        <div><span data-i18n="stat_auth_lbl">Авторитет </span><span id="headerAuth">10</span></div>
+        <div><span data-i18n="stat_coins_lbl">Монети </span><span id="headerCoins">100 🪙</span></div>
+        <div><span data-i18n="stat_diamonds_lbl">Діаманти </span><span id="headerDiamonds" style="color:#80ffdb;">0 💎</span></div>
+      </div>
+    </div>
+
+    <div id="mainMenuRoomNotice" style="display:none; padding: 0 14px 8px;"></div>
+
+    <div class="menu-list compact-menu-list">
+      <!-- Головні дії швидкого старту -->
+      <div class="hero-play-grid">
+        <button type="button" class="menu-btn play-btn hero-cta" data-tab="playScreen">
+          <span class="hero-cta-ico">🎭</span>
+          <span><b data-i18n="menu_join_quick">Приєднатися</b><small data-i18n="menu_join_sub">Знайти відкритий стіл</small></span>
+        </button>
+        <button type="button" class="menu-btn create-quick-btn hero-cta" id="quickCreateRoomBtn">
+          <span class="hero-cta-ico">➕</span>
+          <span><b data-i18n="menu_create_quick">Створити кімнату</b><small data-i18n="menu_create_sub">Налаштувати свій матч</small></span>
+        </button>
+      </div>
+
+      <button type="button" class="menu-btn mod-menu-btn" id="openModMenuBtn" data-tab="modMenuScreen" style="display:none; padding:10px 14px; font-size:13px;">
+        <span data-i18n="menu_mod">🛠️ Адмін та Мод-панель</span>
+        <span style="display:inline-flex; align-items:center; gap:6px;"><span id="adminIdeasMenuBadge" class="unread-pill" style="display:none; background:#e63946;">0</span><span>⚡</span></span>
+      </button>
+
+      <!-- Компактна сітка другорядних розділів -->
+      <div class="compact-nav-grid">
+        <button type="button" class="nav-tile-btn" data-tab="friendsScreen">
+          <span class="nav-tile-ico">👥</span>
+          <span class="nav-tile-lbl" data-i18n="tile_friends">Друзі/Сім'я</span>
+          <span id="friendsUnreadBadge" class="nav-tile-badge"></span>
+        </button>
+        <button type="button" class="nav-tile-btn" data-tab="shopScreen">
+          <span class="nav-tile-ico">🛒</span>
+          <span class="nav-tile-lbl" data-i18n="tile_shop">Крамниця</span>
+        </button>
+        <button type="button" class="nav-tile-btn" data-tab="questsScreen">
+          <span class="nav-tile-ico">🎯</span>
+          <span class="nav-tile-lbl" data-i18n="tile_quests">Завдання</span>
+        </button>
+        <button type="button" class="nav-tile-btn" data-tab="globalChatScreen">
+          <span class="nav-tile-ico">🌍</span>
+          <span class="nav-tile-lbl" data-i18n="tile_global">Заг. чат</span>
+        </button>
+        <button type="button" class="nav-tile-btn" id="openTopBtn">
+          <span class="nav-tile-ico">🏆</span>
+          <span class="nav-tile-lbl" data-i18n="tile_top">Топ-100</span>
+        </button>
+        <button type="button" class="nav-tile-btn" data-tab="rulesScreen">
+          <span class="nav-tile-ico">📖</span>
+          <span class="nav-tile-lbl" data-i18n="tile_rules">Правила</span>
+        </button>
+        <button type="button" class="nav-tile-btn" data-tab="profileScreen">
+          <span class="nav-tile-ico">📊</span>
+          <span class="nav-tile-lbl" data-i18n="tile_profile">Профіль</span>
+        </button>
+        <button type="button" class="nav-tile-btn" data-tab="settingsScreen">
+          <span class="nav-tile-ico">⚙️</span>
+          <span class="nav-tile-lbl" data-i18n="tile_settings">Налашт.</span>
+        </button>
+      </div>
+
+      <div style="display:flex; gap:6px; margin-top:2px;">
+        <button type="button" id="bannerNewsBtn" class="secondary" style="flex:1; margin:0; padding:8px 6px; font-size:11px; border-radius:8px;" data-i18n="menu_dev">📰 Новини</button>
+        <button type="button" id="bannerDevChatBtn" style="flex:1; margin:0; padding:8px 6px; font-size:11px; background:#2a9d8f; border-radius:8px;" data-i18n="menu_author">👨‍💻 Автор</button>
+        <button type="button" id="openDevWelcomeBtn" class="secondary" style="flex:1; margin:0; padding:8px 6px; font-size:11px; border-color:#f4a261; color:#ffd166;" data-i18n="menu_ideas">💌 Ідеї</button>
+      </div>
+      <button type="button" id="installAppMenuBtn" class="secondary" style="margin-top:4px; padding:8px 12px; font-size:11.5px; border-color:#2a9d8f; color:#80ffdb; border-radius:8px; width:100%;" data-i18n="menu_install_app">📲 Встановити додаток (Телефон / ПК)</button>
+    </div>
+  </div>
+
+  <!-- 2.1 АДМІН-ДАШБОРД ТА МОД-МЕНЮ -->
+  <div class="screen" id="modMenuScreen">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:6px;">
+      <button type="button" class="back-btn" id="modBackBtn" style="margin:0;" data-i18n="btn_back">← Назад</button>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <span class="tag tag-legend" id="adminStaffBadge" style="margin:0;">ADMIN</span>
+        <button type="button" id="refreshDashboardBtn" class="secondary" style="width:auto; padding:6px 10px; font-size:11px; margin:0;" data-i18n="mod_refresh">🔄 Оновити</button>
+      </div>
+    </div>
+    <h3 style="color:#f4a261; margin:0 0 6px; font-size:16px;" data-i18n="mod_title">🛠️ Адмін та Мод-панель</h3>
+    <p id="modFeedback" style="color:#2a9d8f; font-size:13px; margin:0 0 8px; font-weight:bold;"></p>
+
+    <details class="card mod-section-card" id="modDashDetails">
+      <summary class="mod-section-summary" data-i18n="mod_sec_dash">📊 Живий дашборд проєкту</summary>
+      <div id="adminMetricsGrid" class="stats-grid" style="margin-top:8px;"></div>
+      <div style="margin-top:10px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.08);">
+        <div style="font-size:11px; color:#8892b0; margin-bottom:5px;" data-i18n="mod_online_hint">👥 Гравці онлайн (клік — підставити нік):</div>
+        <div id="adminOnlinePlayersList" style="display:flex; flex-wrap:wrap; gap:5px;"></div>
+      </div>
+      <div style="margin-top:10px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.08);">
+        <div id="adminCloudDbStatus" style="font-size:11.5px; color:#80ffdb; margin-bottom:6px; font-weight:bold;">☁️ Статус БД: перевірка...</div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+          <button type="button" id="adminExportDbBtn" class="secondary" style="flex:1; margin:0; padding:7px 10px; font-size:11px; border-color:#2a9d8f; color:#80ffdb;" data-i18n="mod_export_db">💾 Скачати резервну копію БД (.json)</button>
+          <button type="button" id="adminImportDbBtn" class="secondary" style="flex:1; margin:0; padding:7px 10px; font-size:11px; border-color:#f4a261; color:#ffd166;" data-i18n="mod_import_db">📂 Відновити БД з файлу (.json)</button>
+          <input type="file" id="adminImportDbFile" accept=".json,application/json" style="display:none;">
+        </div>
+      </div>
+    </details>
+
+    <details class="card mod-section-card" id="modStaffSection" style="margin-top:8px;">
+      <summary class="mod-section-summary"><span data-i18n="mod_sec_staff">👑 Персонал: Братік, Тестери, Модери та Паролі</span> <span id="adminPwdResetBadge" class="unread-pill" style="display:none; margin-left:6px; background:#f4a261; color:#111;">0</span></summary>
+      <div style="margin-top:8px;">
+        <div style="background:rgba(244,162,97,0.08); border:1px solid rgba(244,162,97,0.3); border-radius:8px; padding:8px; margin-bottom:8px;">
+          <div style="font-size:12px; font-weight:bold; color:#ffd166; margin-bottom:4px;" data-i18n="mod_bratik_title">🤝 Призначити посаду «Братік» (повний доступ + свій код):</div>
+          <div style="display:flex; gap:6px;">
+            <input type="text" id="modBratikNick" placeholder="Нік гравця..." data-i18n-placeholder="ph_player_nick" style="margin:0;">
+            <button type="button" id="modAssignBratikBtn" style="width:auto; margin:0; padding:0 12px; background:#f4a261; color:#111; font-size:12px;" data-i18n="mod_bratik_grant">🤝 Братік</button>
+            <button type="button" id="modRevokeBratikBtn" class="secondary" style="width:auto; margin:0; padding:0 10px; color:#ff6b6b; font-size:12px;" title="Зняти">✕</button>
+          </div>
+        </div>
+
+        <div style="background:rgba(42,157,143,0.1); border:1px solid rgba(42,157,143,0.35); border-radius:8px; padding:8px; margin-bottom:8px;">
+          <div style="font-size:12px; font-weight:bold; color:#80ffdb; margin-bottom:4px;" data-i18n="mod_tester_title">🧪 Додати Тестера (+10 000 🪙, +1 000 ⭐, +250 💎, VIP):</div>
+          <div style="display:flex; gap:6px;">
+            <input type="text" id="modTesterNick" placeholder="Нік тестера..." data-i18n-placeholder="ph_player_nick" style="margin:0;">
+            <button type="button" id="modGrantTesterBtn" style="width:auto; margin:0; padding:0 12px; background:#2a9d8f; font-size:12px;" data-i18n="mod_tester_grant">🧪 +Тестер</button>
+            <button type="button" id="modRevokeTesterBtn" class="secondary" style="width:auto; margin:0; padding:0 10px; color:#ff6b6b; font-size:12px;" title="Зняти">✕</button>
+          </div>
+          <div id="adminTestersList" style="margin-top:6px; font-size:11px; color:#cbd5e1;"></div>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.12); border-radius:8px; padding:8px; margin-bottom:8px;">
+          <div style="font-size:12px; font-weight:bold; color:#cbd5e1; margin-bottom:4px;" data-i18n="mod_role_title">🛡️ Призначити / зняти Модератора (перегляд скарг, мути):</div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <input type="text" id="modStaffNick" placeholder="Нік гравця..." data-i18n-placeholder="ph_player_nick" style="flex:1; min-width:120px; margin:0;">
+            <select id="modStaffRoleSelect" style="width:auto; margin:0; padding:6px;">
+              <option value="helper">🛡️ Модератор</option>
+              <option value="senior_mod">⚔️ Ст. Модератор</option>
+              <option value="player">❌ Звичайний гравець</option>
+            </select>
+            <button type="button" id="modSetStaffRoleBtn" class="secondary" style="width:auto; margin:0; padding:0 12px; font-size:12px;" data-i18n="btn_save">Зберегти</button>
+          </div>
+          <div id="adminStaffList" style="margin-top:6px; font-size:11px; color:#94a3b8;"></div>
+        </div>
+
+        <div style="padding-top:6px; border-top:1px solid rgba(255,255,255,0.08);">
+          <div style="font-size:11.5px; color:#ffd166; font-weight:bold; margin-bottom:4px;" data-i18n="mod_pwd_resets_title">🔑 Запити на скидання пароля:</div>
+          <div id="adminPasswordResetsList" style="max-height:160px; overflow-y:auto; font-size:11px;"></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="card mod-section-card" style="margin-top:8px;">
+      <summary class="mod-section-summary" data-i18n="mod_sec_bots">🤖 Керування ботами та фазою (поточна кімната)</summary>
+      <div style="margin-top:8px;">
+        <div style="display:flex; gap:6px;">
+          <button type="button" id="modAdd4Bots" style="flex:1; padding:8px; font-size:12px; margin:0;" data-i18n="mod_add4">+4 Боти</button>
+          <button type="button" id="modAdd8Bots" style="flex:1; padding:8px; font-size:12px; margin:0;" data-i18n="mod_add8">+8 Ботів</button>
+          <button type="button" id="modClearBots" class="secondary" style="flex:1; padding:8px; font-size:12px; margin:0; color:#ff6b6b;" data-i18n="mod_clear_bots">✕ Очистити</button>
+        </div>
+        <button type="button" id="modSkipPhaseBtn" style="background:#9b5de5; margin-top:6px; padding:9px; font-size:12px; font-weight:bold;" data-i18n="mod_skip_phase">⏩ Пропустити таймер фази (до 1 сек)</button>
+        <label class="hint" style="margin-top:8px;" data-i18n="mod_bot_style_lbl">Стиль поведінки ботів:</label>
+        <select id="modBotStyle">
+          <option value="balanced" data-i18n="mod_bot_style_bal">Збалансовані (розумна гра)</option>
+          <option value="aggressive" data-i18n="mod_bot_style_agg">Агресивні (активно звинувачують)</option>
+          <option value="cautious" data-i18n="mod_bot_style_caut">Обережні (тиха гра)</option>
+        </select>
+        <hr style="border-color:rgba(255,255,255,0.08); margin:10px 0;">
+        <div style="font-size:12px; color:#ccc; font-weight:bold; margin-bottom:4px;" data-i18n="mod_bot_order_title">Наказ конкретному боту:</div>
+        <input type="text" id="modBotTargetNick" placeholder="Нік бота (напр. Бот_Алекс)" data-i18n-placeholder="ph_mod_bot_nick">
+        <div style="display:flex; gap:6px;">
+          <input type="text" id="modBotSayText" placeholder="Текст для чату..." data-i18n-placeholder="ph_mod_bot_say" style="margin:0;">
+          <button type="button" id="modBotSayBtn" class="secondary" style="width:auto; padding:0 12px; margin:0; font-size:12px;" data-i18n="mod_bot_say_btn">💬 Сказати</button>
+        </div>
+        <div style="display:flex; gap:6px; margin-top:6px;">
+          <input type="text" id="modBotVoteTarget" placeholder="Ціль для голосу..." data-i18n-placeholder="ph_mod_bot_vote" style="margin:0;">
+          <button type="button" id="modBotVoteBtn" class="secondary" style="width:auto; padding:0 12px; margin:0; font-size:12px;" data-i18n="mod_bot_vote_btn">🗳️ Голос</button>
+        </div>
+      </div>
+    </details>
+
+    <details class="card mod-section-card" style="margin-top:8px;">
+      <summary class="mod-section-summary"><span data-i18n="mod_sec_reports">🚩 Скарги гравців</span> <span id="adminOpenReportsBadge" class="unread-pill" style="display:none; margin-left:6px;">0</span></summary>
+      <div style="margin-top:8px;">
+        <div style="display:flex; gap:5px; flex-wrap:wrap; margin-bottom:6px;">
+          <button type="button" class="admin-quick-pill report-filter-btn active" data-filter="open" data-i18n="mod_rep_open">🔴 Відкриті</button>
+          <button type="button" class="admin-quick-pill report-filter-btn" data-filter="closed" data-i18n="mod_rep_closed">🟢 Закриті</button>
+          <button type="button" class="admin-quick-pill report-filter-btn" data-filter="all" data-i18n="mod_rep_all">📋 Усі</button>
+        </div>
+        <input type="text" id="adminReportSearchInput" placeholder="🔍 Пошук скарги за ніком або причиною..." data-i18n-placeholder="ph_mod_rep_search" style="margin-bottom:8px; padding:7px 10px; font-size:12px;">
+        <div id="adminReportsList" style="max-height:360px; overflow-y:auto;"></div>
+      </div>
+    </details>
+
+    <details class="card mod-section-card" style="margin-top:8px;">
+      <summary class="mod-section-summary" data-i18n="mod_sec_punish">🔨 Покарання та їх скасування</summary>
+      <div style="margin-top:8px;">
+        <input type="text" id="modPunishNick" placeholder="Нікнейм гравця..." data-i18n-placeholder="ph_player_nick">
+        <select id="modPunishType" style="margin-top:4px;">
+          <option value="warn" data-i18n="pun_warn">⚠️ Попередження (-10 карми)</option>
+          <option value="mute_30m" data-i18n="pun_m30">🔇 Мут чату на 30 хвилин</option>
+          <option value="mute_2h" selected data-i18n="pun_m2h">🔇 Мут чату на 2 години</option>
+          <option value="mute_24h" data-i18n="pun_m24h">🔇 Мут чату на 24 години</option>
+          <option value="playban_24h" data-i18n="pun_pb24h">🎮 Заборона грати на 24 години (чати доступні)</option>
+          <option value="playban_7d" data-i18n="pun_pb7d">🎮 Заборона грати на 7 днів (чати доступні)</option>
+          <option value="playban_perm" data-i18n="pun_pbperm">🎮 Заборона грати назавжди (чати доступні)</option>
+          <option value="tempban_24h" data-i18n="pun_tb24h">⏳ Тимчасовий бан на 24 години</option>
+          <option value="tempban_7d" data-i18n="pun_tb7d">⏳ Тимчасовий бан на 7 днів</option>
+          <option value="permban" data-i18n="pun_permban">🚫 Перманентний бан назавжди</option>
+        </select>
+        <input type="text" id="modPunishReason" placeholder="Причина покарання (необов'язково)..." data-i18n-placeholder="ph_pun_reason" style="margin-top:4px;">
+        <button type="button" id="modApplyPunishBtn" style="background:#e63946; margin-top:6px; font-weight:bold;" data-i18n="mod_apply_punish">⚖️ Застосувати покарання</button>
+
+        <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;">
+          <button type="button" id="modUnmuteBtn" class="secondary" style="flex:1; min-width:95px; margin:0; padding:7px; font-size:11px; color:#80ffdb;" data-i18n="mod_unmute">🔊 Зняти мут</button>
+          <button type="button" id="modUnplaybanBtn" class="secondary" style="flex:1; min-width:110px; margin:0; padding:7px; font-size:11px; color:#90e0ef;" data-i18n="mod_unplayban">🎮 Зняти заборону гри</button>
+          <button type="button" id="modUnbanBtn" class="secondary" style="flex:1; min-width:95px; margin:0; padding:7px; font-size:11px; color:#ffd166;" data-i18n="mod_unban">🔓 Розбанити</button>
+        </div>
+
+        <div style="margin-top:10px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.08);">
+          <div style="font-size:11px; color:#aaa; font-weight:bold; margin-bottom:6px;" data-i18n="mod_active_puns">📋 Активні мути, заборони гри та бани:</div>
+          <div id="adminActivePunishmentsList" style="max-height:180px; overflow-y:auto;"></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="card mod-section-card" id="modGiftDetails" style="margin-top:8px;">
+      <summary class="mod-section-summary" data-i18n="mod_sec_gift">🎁 Нарахувати нагороду гравцю</summary>
+      <div style="margin-top:8px;">
+        <input type="text" id="modGiftNick" placeholder="Нікнейм гравця..." data-i18n-placeholder="ph_player_nick">
+        <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:6px; margin-top:4px;">
+          <div><span style="font-size:11px; color:#ffd166;" data-i18n="lbl_coins">Монети 🪙</span><input type="number" id="modGiftCoins" value="100" min="0"></div>
+          <div><span style="font-size:11px; color:#80ffdb;" data-i18n="lbl_diamonds">Діаманти 💎</span><input type="number" id="modGiftDiamonds" value="0" min="0"></div>
+          <div><span style="font-size:11px; color:#ffd166;" data-i18n="lbl_auth">Авторитет ⭐</span><input type="number" id="modGiftAuth" value="25" min="0"></div>
+          <div><span style="font-size:11px; color:#ffd166;" data-i18n="lbl_xp">Досвід XP</span><input type="number" id="modGiftXp" value="150" min="0"></div>
+        </div>
+        <input type="text" id="modGiftComment" placeholder="Коментар від адміна (напр. За чудову гру!)" data-i18n-placeholder="ph_mod_gift_comment" style="margin-top:4px;">
+        <button type="button" id="modGiftBtn" style="background:#2a9d8f; margin-top:6px;" data-i18n="mod_grant_btn">🎁 Нарахувати нагороду</button>
+      </div>
+    </details>
+
+    <details class="card mod-section-card" id="modSuspiciousDetails" style="margin-top:8px;">
+      <summary class="mod-section-summary"><span data-i18n="mod_sec_anticheat">🕵️ Підозрілі дії (Античит)</span> <span id="adminSuspiciousBadge" class="unread-pill" style="display:none; margin-left:6px; background:#e63946;">0</span></summary>
+      <div style="margin-top:8px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <span style="font-size:11px; color:#8892b0;" data-i18n="mod_ac_hint">Автоматично зафіксовані спроби читерства / спаму:</span>
+          <button type="button" id="clearSuspiciousLogsBtn" class="secondary" style="width:auto; margin:0; padding:4px 8px; font-size:11px; color:#ff6b6b;" data-i18n="mod_clear_btn">🧹 Очистити</button>
+        </div>
+        <div id="adminSuspiciousLogsList" style="max-height:220px; overflow-y:auto; font-size:11px;"></div>
+      </div>
+    </details>
+
+    <details class="card mod-section-card" id="modIdeasDetails" style="margin-top:8px;">
+      <summary class="mod-section-summary"><span data-i18n="mod_sec_ideas">💡 Ідеї та відгуки гравців</span> <span id="adminIdeasSectionBadge" class="unread-pill" style="display:none; margin-left:6px; background:#e63946;">0</span></summary>
+      <div id="adminIdeasList" style="max-height:220px; overflow-y:auto; margin-top:8px; font-size:11px;"></div>
+    </details>
+
+    <details class="card mod-section-card" id="modNewsDetails" style="margin-top:8px;">
+      <summary class="mod-section-summary" data-i18n="mod_sec_news">📰 Публікація новин розробки</summary>
+      <div style="margin-top:8px;">
+        <input type="text" id="modPostTitle" placeholder="Заголовок новини..." data-i18n-placeholder="ph_post_title">
+        <textarea id="modPostText" rows="3" placeholder="Текст оновлення або патчноуту..." data-i18n-placeholder="ph_post_text"></textarea>
+        <button type="button" id="modCreatePostBtn" class="secondary" style="margin-top:6px;" data-i18n="mod_pub_post">📢 Опублікувати для всіх</button>
+      </div>
+    </details>
+
+    <details class="card mod-section-card" id="modLogsDetails" style="margin-top:8px;">
+      <summary class="mod-section-summary" data-i18n="mod_sec_logs">📜 Журнал дій модераторів</summary>
+      <div id="adminModLogsList" style="max-height:220px; overflow-y:auto; margin-top:8px; font-size:11px;"></div>
+    </details>
+  </div>
+
+  <!-- 2.2 ЩОДЕННІ ЗАВДАННЯ (ДЕЙЛІКИ) -->
+  <div class="screen" id="questsScreen">
+    <button type="button" class="back-btn" data-tab="mainMenuScreen" data-i18n="btn_back_menu">← Назад у меню</button>
+    <h3 data-i18n="quests_title">🎯 Щоденні завдання</h3>
+    <div id="dailyQuestsList" style="margin-top:10px;"></div>
+  </div>
+
+  <!-- 3. ПРОФІЛЬ ТА СТАТИСТИКА -->
+  <div class="screen" id="profileScreen">
+    <button type="button" class="back-btn" data-tab="mainMenuScreen" data-i18n="btn_back_menu">← Назад у меню</button>
+    <h3 style="margin-bottom:10px;" data-i18n="profile_stats_title">📊 Статистика гравця</h3>
+    <div id="fullStatsBox"></div>
+    <h3 style="margin:14px 0 8px;" data-i18n="profile_history_title">📜 Історія ігор</h3>
+    <div id="historyBox" data-i18n="profile_no_history">Поки що немає зіграних матчів.</div>
+  </div>
+
+  <!-- 4. ВКЛАДКА ГРАТИ -->
+  <div class="screen" id="playScreen">
+    <button type="button" class="back-btn" data-tab="mainMenuScreen" data-i18n="btn_back_menu">← Назад у меню</button>
+    <div id="playScreenTopNotice"></div>
+    <button type="button" id="toggleCreateRoomBtn" data-i18n="play_create_room">➕ Створити свою кімнату</button>
+    <div class="card" id="createRoomForm" style="display:none; margin-top:10px;">
+      <h4 style="margin-bottom:8px;" data-i18n="play_new_room_title">Налаштування нової кімнати</h4>
+      <input type="text" id="roomName" placeholder="Назва кімнати" data-i18n-placeholder="ph_room_name">
+      <select id="roomMode">
+        <option value="classic" data-i18n="mode_classic_opt">Режим: Класика</option>
+        <option value="legend" id="legendModeOption" data-i18n="mode_legend_opt">Режим: Легенда (від 100 ігор)</option>
+      </select>
+      <div style="display:flex; gap:10px; margin:6px 0; font-size:12px; flex-wrap:wrap;">
+        <label><input type="checkbox" id="roomIsRanked"> <span data-i18n="room_is_ranked"> 🏆 Рангова (Анти-тімінг)</span></label>
+        <label><input type="checkbox" id="roomIsPrivate"> <span data-i18n="room_is_private"> 🔒 Приватна (з паролем)</span></label>
+      </div>
+      <details class="info-tri" style="margin-bottom:8px;">
+        <summary class="info-tri-summary" data-i18n="room_modes_info_sum">ℹ️ Як працюють Рангова та Приватна кімнати?</summary>
+        <div class="info-tri-box" data-i18n-html="room_modes_info_html">
+          <b>🏆 Рангова кімната:</b> захист від змови — у матч не можуть зайти друзі зі списку або гравці з одного IP/мережі, а перемога дає <b>+50% авторитету (⭐)</b>.<br>
+          <b>🔒 Приватна кімната:</b> закритий стіл лише для своїх — вхід виключно за заданим паролем (спостерігачів без пароля не пускає).
+        </div>
+      </details>
+      <input type="text" id="roomPasswordInput" placeholder="Пароль для приватної кімнати..." data-i18n-placeholder="ph_room_pass" style="display:none;">
+      <div class="slider-group">
+        <div class="slider-header"><span data-i18n="room_min_p">Мінімум гравців:</span><b id="minPlayersVal" class="slider-badge">5</b></div>
+        <div class="slider-stepper-row">
+          <button type="button" class="stepper-btn" data-slider="roomMinPlayers" data-delta="-1">−</button>
+          <input type="range" id="roomMinPlayers" value="5" min="5" max="16" class="styled-slider">
+          <button type="button" class="stepper-btn" data-slider="roomMinPlayers" data-delta="1">+</button>
+        </div>
+      </div>
+      <div class="slider-group">
+        <div class="slider-header"><span data-i18n="room_max_p">Максимум гравців:</span><b id="maxPlayersVal" class="slider-badge">8</b></div>
+        <div class="slider-stepper-row">
+          <button type="button" class="stepper-btn" data-slider="roomMaxPlayers" data-delta="-1">−</button>
+          <input type="range" id="roomMaxPlayers" value="8" min="5" max="16" class="styled-slider">
+          <button type="button" class="stepper-btn" data-slider="roomMaxPlayers" data-delta="1">+</button>
+        </div>
+      </div>
+      <div class="slider-group">
+        <div class="slider-header"><span data-i18n="room_min_auth">Мінімальний авторитет входу:</span><b id="minAuthVal" class="slider-badge">0</b></div>
+        <div class="slider-stepper-row">
+          <button type="button" class="stepper-btn" data-slider="roomMinAuth" data-delta="-10">−</button>
+          <input type="range" id="roomMinAuth" value="0" min="0" max="500" step="10" class="styled-slider">
+          <button type="button" class="stepper-btn" data-slider="roomMinAuth" data-delta="10">+</button>
+        </div>
+      </div>
+      <div class="slider-group">
+        <div class="slider-header"><span data-i18n="room_min_karma">Бажана мінімальна карма:</span><b id="minKarmaVal" class="slider-badge">0</b></div>
+        <div class="slider-stepper-row">
+          <button type="button" class="stepper-btn" data-slider="roomMinKarma" data-delta="-5">−</button>
+          <input type="range" id="roomMinKarma" value="0" min="0" max="90" step="5" class="styled-slider">
+          <button type="button" class="stepper-btn" data-slider="roomMinKarma" data-delta="5">+</button>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+        <span class="hint" style="margin:0; font-weight:bold;" data-i18n="room_pick_roles">Обери ролі для кімнати:</span>
+        <span id="rolesSelectedLimitHint" style="font-size:11px; color:#80ffdb; font-weight:bold;"></span>
+      </div>
+      <div id="rolesGridContainer" class="roles-card-grid"></div>
+      <div id="rolesForecastBox" class="roles-forecast-box"></div>
+      <button type="button" id="submitRoomBtn" style="margin-top:12px; background:#2a9d8f; font-weight:bold; font-size:14px; padding:12px;" data-i18n="room_submit_btn">🟢 Створити кімнату та увійти в лобі</button>
+      <p id="roomError" class="error-text"></p>
+    </div>
+    <h3 style="margin: 14px 0 8px;" data-i18n="play_active_rooms">Активні та поточні кімнати</h3>
+    <div id="roomsContainer" data-i18n="play_no_rooms">Немає створених кімнат. Будь першим!</div>
+  </div>
+
+  <!-- 4.0 ОКРЕМЕ ВІКНО ЛОБІ ОЧІКУВАННЯ (до старту гри) -->
+  <div class="screen" id="lobbyScreen">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; gap:4px;">
+      <button type="button" class="back-btn" id="leaveLobbyBtn" style="margin:0; padding:6px 10px;" data-i18n="btn_exit">🚪 Вийти</button>
+      <b id="lobbyRoomTitle" style="color:#f4a261; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" data-i18n="lobby_default_title">Лобі кімнати</b>
+      <div style="display:flex; gap:4px; align-items:center;">
+        <button type="button" id="copyLobbyLinkBtn" class="secondary" style="width:auto; padding:5px 8px; margin:0; font-size:11px;" data-i18n="btn_invite">🔗 Запросити</button>
+        <span id="lobbyCountdownBadge" class="timer-pill" style="display:none; background:#f4a261; color:#111;">⏳ 40 с</span>
+        <button type="button" id="inLobbyModBtn" style="width:auto; padding:5px 8px; margin:0; background:#f4a261; color:#111; font-size:11px; display:none;" data-i18n="btn_mod_short">🛠️ Мод</button>
+      </div>
+    </div>
+
+    <div style="display:flex; justify-content:space-between; align-items:center; background:#1c1f26; padding:8px 10px; border-radius:8px; border:1px solid #333; margin-bottom:8px;">
+      <div>
+        <span id="lobbyStatusText" style="font-size:13px; font-weight:bold; color:#80ffdb;" data-i18n="lobby_waiting">⏳ Очікування гравців...</span>
+        <div id="lobbyRoomMeta" style="font-size:11px; color:#8892b0; margin-top:2px;">GLOBAL</div>
+      </div>
+      <span id="lobbyRoomModeTag" class="tag tag-classic" style="margin:0;" data-i18n="tag_classic">КЛАСИКА</span>
+    </div>
+
+    <details style="margin-bottom:8px; font-size:12px; color:#aaa;" open>
+      <summary style="cursor:pointer;" data-i18n="lobby_roles_summary">🎭 Ролі в цій кімнаті</summary>
+      <div id="lobbyRoomRolesGrid" class="inside-roles-strip" style="margin-top:4px;"></div>
+    </details>
+
+    <div style="font-size:12px; color:#aaa; margin-bottom:4px;"><span data-i18n="lobby_players_lbl">Гравці в лобі</span> (<span id="lobbyPlayersCount">1/8</span>):</div>
+    <div id="lobbyPlayersList" class="compact-players-grid" style="margin-bottom:8px;"></div>
+
+    <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px;">
+      <button type="button" id="openHireBotsBtn" class="secondary" style="flex:1; min-width:130px; margin:0; padding:10px; font-weight:bold; border-color:#2a9d8f; color:#80ffdb;" data-i18n="lobby_hire_bots_btn">🤖 Боти (25 🪙)</button>
+      <button type="button" id="openLobbyMinigamesBtn" class="secondary" style="flex:1; min-width:130px; margin:0; padding:10px; font-weight:bold; border-color:#f4a261; color:#ffd166;" data-i18n="lobby_minigames_btn">🎮 Міні-ігри поки чекаємо</button>
+      <button type="button" id="startGameBtn" style="flex:1; min-width:130px; display:none; margin:0; background:#2a9d8f; padding:10px; font-weight:bold;" data-i18n="lobby_start_btn">▶️ Почати гру зараз</button>
+    </div>
+
+    <div class="modern-chat-wrapper">
+      <div class="chat-channel-bar">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span class="channel-dot"></span>
+          <span class="channel-title" data-i18n="lobby_chat_title">💬 ЧАТ ЛОБІ (Окремо від гри)</span>
+        </div>
+        <span class="channel-counter" id="lobbyChatCounterBadge">0 смс</span>
+      </div>
+      <div class="room-chat-box modern-chat-container" id="lobbyChatBox"></div>
+      <div class="modern-chat-input-bar">
+        <input type="text" id="lobbyMsgInput" placeholder="Спілкування в лобі... (Enter для відправки)" data-i18n-placeholder="ph_lobby_msg" maxlength="300" autocomplete="off">
+        <button type="button" id="sendLobbyMsgBtn" class="chat-send-btn" title="Надіслати в лобі" data-i18n-title="title_send_lobby">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4.1 ОКРЕМЕ ВІКНО ГРИ (ІГРОВИЙ СТІЛ) -->
+  <div class="screen" id="roomScreen">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; gap:4px;">
+      <button type="button" class="back-btn" id="leaveRoomBtn" style="margin:0; padding:6px 10px;" data-i18n="btn_exit">🚪 Вийти</button>
+      <b id="insideRoomTitle" style="color:#f4a261; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" data-i18n="room_default_title">Кімната</b>
+      <div style="display:flex; gap:4px; align-items:center;">
+        <button type="button" id="copyRoomLinkBtn" class="secondary" style="width:auto; padding:5px 8px; margin:0; font-size:11px;">🔗</button>
+        <button type="button" id="inRoomModBtn" style="width:auto; padding:5px 8px; margin:0; background:#f4a261; color:#111; font-size:11px; display:none;" data-i18n="btn_mod_short">🛠️ Мод</button>
+      </div>
+    </div>
+
+    <details class="top-roles-drawer" open style="margin-bottom:6px; font-size:11px; color:#8892b0; background:rgba(255,255,255,0.04); padding:5px 9px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
+      <summary style="cursor:pointer; font-weight:bold; color:#cbd5e1;"><span data-i18n="room_roles_list">🎭 Список ролей у кімнаті</span> (<span id="insideRoomMeta">GLOBAL</span>)</summary>
+      <div id="insideRoomRolesGrid" class="inside-roles-strip" style="margin-top:5px;"></div>
+    </details>
+
+    <div class="game-topbar-phase">
+      <div style="display:flex; align-items:center; gap:6px; overflow:hidden;">
+        <span id="phaseTitleText" style="font-size:13px; font-weight:bold; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">🌙 Ніч №1</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
+        <button type="button" id="myRoleMiniPill" style="display:none; width:auto; margin:0; padding:3px 9px; font-size:11px; background:rgba(244,162,97,0.18); border:1px solid #f4a261; color:#ffd166; border-radius:999px;" title="Натисніть, щоб переглянути опис ролі" data-i18n="my_role_pill_default" data-i18n-title="title_role_pill">🎭 Роль</button>
+        <span id="phaseTimerBadge" class="timer-pill" style="display:none; padding:3px 10px; font-size:12px;">30 с</span>
+      </div>
+    </div>
+
+    <div id="nightActionHintBanner" style="display:none; font-size:11px; font-weight:bold; padding:6px 10px; border-radius:8px; margin-bottom:6px; text-align:center;"></div>
+
+    <div id="deadFreePlayBanner" style="display:none; background:rgba(42,157,143,0.16); border:1px solid #2a9d8f; padding:7px 10px; border-radius:8px; margin-bottom:6px; font-size:11px; color:#80ffdb; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+      <span data-i18n="dead_free_play_text">👻 Ви вибули з цієї партії — можна спостерігати або вільно створити/увійти в іншу гру без штрафу.</span>
+      <button type="button" id="deadFreePlayGoBtn" style="width:auto; margin:0; padding:5px 10px; font-size:11px; background:#2a9d8f; font-weight:bold;" data-i18n="dead_free_play_btn">🎮 Інші кімнати</button>
+    </div>
+
+    <div id="lastWillBox" class="card" style="display:none; border:1px solid #d4a373; background:#231e18; padding:8px 10px; margin-bottom:6px;">
+      <div style="font-size:11px; color:#ffd166; font-weight:bold; margin-bottom:4px;" data-i18n="room_last_will">📜 Останнє слово (натисніть на нік гравця, щоб вставити):</div>
+      <div style="display:flex; gap:6px;">
+        <input type="text" id="lastWillInput" placeholder="Напишіть ваше останнє слово для міста..." data-i18n-placeholder="ph_last_will" style="margin:0; padding:7px; font-size:12px;">
+        <button type="button" id="sendLastWillBtn" style="width:auto; padding:0 12px; margin:0; background:#d4a373; color:#111; font-size:12px;" data-i18n="room_last_will_btn">Надіслати</button>
+      </div>
+    </div>
+
+    <div class="game-panel-card" style="margin-bottom:8px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <span style="font-size:11px; font-weight:700; color:#cbd5e1;"><span data-i18n="room_players">👥 Гравці</span> (<span id="insidePlayersCount">1/8</span>) <span style="font-weight:normal; color:#64748b;" data-i18n="room_click_mention">• клік по ніку = згадати в чаті</span></span>
+        <span id="insideRoomModeTag" class="tag tag-classic" style="margin:0;" data-i18n="tag_classic">КЛАСИКА</span>
+      </div>
+      <div id="insidePlayersList" class="compact-players-grid"></div>
+    </div>
+
+    <div class="modern-chat-wrapper">
+      <div class="chat-channel-bar" id="chatChannelBar">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span class="channel-dot" id="channelDot"></span>
+          <span class="channel-title" id="channelTitle" data-i18n="channel_day_default">☀️ ДЕННЕ ОБГОВОРЕННЯ</span>
+        </div>
+        <span class="channel-counter" id="chatCounterBadge">0 смс</span>
+      </div>
+
+      <div class="room-chat-box modern-chat-container" id="roomChatBox" style="height:290px;"></div>
+
+      <!-- Висувний інвентар №1: Смайли -->
+      <div class="chat-drawer" id="emojiDrawer" style="display:none;">
+        <div class="quick-reactions-bar" id="roomQuickReactions">
+          <button type="button" class="quick-react-btn" data-emoji="🕵️" title="Підозрюю" data-i18n-title="react_suspicion">🕵️</button>
+          <button type="button" class="quick-react-btn" data-emoji="🤫" title="Тихо" data-i18n-title="react_quiet">🤫</button>
+          <button type="button" class="quick-react-btn" data-emoji="🔫" title="Мафія?" data-i18n-title="react_mafia">🔫</button>
+          <button type="button" class="quick-react-btn" data-emoji="💀" title="Смерть" data-i18n-title="react_dead">💀</button>
+          <button type="button" class="quick-react-btn" data-emoji="👍" title="Згоден" data-i18n-title="react_agree">👍</button>
+          <button type="button" class="quick-react-btn" data-emoji="👎" title="Проти" data-i18n-title="react_disagree">👎</button>
+          <button type="button" class="quick-react-btn" data-emoji="😱" title="Шок" data-i18n-title="react_shock">😱</button>
+          <button type="button" class="quick-react-btn" data-emoji="❓" title="Питання" data-i18n-title="react_question">❓</button>
+          <button type="button" class="quick-react-btn" data-emoji="🕯️" title="Свічка" data-i18n-title="react_candle">🕯️</button>
+          <button type="button" class="quick-react-btn" data-emoji="🎭" title="Маска" data-i18n-title="react_mask">🎭</button>
+          <button type="button" class="quick-react-btn" data-emoji="🥂" title="За успіх" data-i18n-title="react_cheers">🥂</button>
+        </div>
+      </div>
+
+      <!-- Висувний інвентар №2: Подарунки за стіл -->
+      <div class="chat-drawer gift-drawer" id="giftDrawer" style="display:none;">
+        <div class="gift-drawer-controls">
+          <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; width:100%;">
+            <span style="font-size:11px; color:#ffd166; font-weight:bold;" data-i18n="room_gift_target_lbl">Кому подарувати:</span>
+            <select id="giftDrawerTarget" style="flex:1; min-width:120px; margin:0; padding:4px 8px; font-size:12px;"></select>
+          </div>
+          <label class="gift-incognito-lbl">
+            <input type="checkbox" id="giftIncognitoCheck">
+            <span data-i18n="room_gift_incognito">🕵️ Інкогніто (+15 🪙 або безкоштовно з VIP)</span>
+          </label>
+        </div>
+        <div id="giftDrawerItems" class="gift-drawer-grid"></div>
+      </div>
+
+      <div class="modern-chat-input-bar">
+        <button type="button" id="toggleEmojiDrawerBtn" class="chat-drawer-toggle" title="Смайли" data-i18n-title="title_emoji_btn">😊</button>
+        <button type="button" id="toggleGiftDrawerBtn" class="chat-drawer-toggle" title="Подарувати предмет за стіл" data-i18n-title="title_gift_btn">🎁</button>
+        <input type="text" id="roomMsgInput" placeholder="Написати повідомлення... (Enter для відправки)" data-i18n-placeholder="ph_room_msg" maxlength="300" autocomplete="off">
+        <button type="button" id="sendRoomMsgBtn" class="chat-send-btn" title="Надіслати повідомлення (Enter)" data-i18n-title="title_send_msg">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <button type="button" id="shareMatchResultBtn" style="display:none; margin-top:8px; background:#9b5de5; padding:10px;" data-i18n="btn_share_match">📸 Картка матчу для соцмереж</button>
+  </div>
+
+  <!-- 5. ДРУЗІ, ПОШУК ТА СІМ'Я -->
+  <div class="screen" id="friendsScreen">
+    <button type="button" class="back-btn" data-tab="mainMenuScreen" data-i18n="btn_back_menu">← Назад у меню</button>
+    <h3 data-i18n="friends_title">👥 Друзі, Пошук та Сім'я</h3>
+
+    <div class="auth-tabs" style="margin-top:8px;">
+      <button type="button" class="auth-tab-btn active" id="tabMyFriends" data-i18n="tab_friends">🔍 Пошук і Друзі</button>
+      <button type="button" class="auth-tab-btn" id="tabFriendReqs"><span data-i18n="tab_reqs">📩 Заявки</span> <span id="reqTabCount"></span></button>
+      <button type="button" class="auth-tab-btn" id="tabFamily" data-i18n="tab_family">⚜️ Сім'я</button>
+    </div>
+
+    <div id="friendsMainPane">
+      <div class="card" style="margin-top:6px;">
+        <label class="hint" style="margin-top:0;" data-i18n="friends_search_lbl">Знайти гравця за нікнеймом:</label>
+        <div style="display:flex; gap:6px; margin-top:4px;">
+          <input type="text" id="searchPlayerInput" placeholder="Введи нікнейм гравця..." data-i18n-placeholder="ph_search_player" style="margin:0;">
+          <button type="button" id="searchPlayerBtn" style="width:auto; padding:0 14px; margin:0; background:#1e2433; border:1px solid #f4a261; color:#ffd166; font-size:13px; display:inline-flex; align-items:center; gap:5px; white-space:nowrap;" data-i18n="btn_search">🔍 Знайти</button>
+        </div>
+        <div id="playerSearchResults" style="margin-top:8px; max-height:220px; overflow-y:auto;"></div>
+      </div>
+
+      <div class="card" style="font-size:12px;">
+        <b data-i18n="ref_title">🎁 Реферальне посилання (Приведи друга):</b>
+        <p style="color:#aaa; margin:4px 0;" data-i18n="ref_desc">1 друг = +500 🪙 і стікери; 3 друзі = Рамка + VIP 3 дні; 5 друзів = Титул «Хрещений батько».</p>
+        <button type="button" id="copyRefLinkBtn" class="secondary" style="padding:7px; font-size:12px;" data-i18n="ref_copy_btn">📋 Скопіювати моє реферальне посилання</button>
+      </div>
+
+      <p id="friendFeedback" style="font-size:12px; color:#2a9d8f; margin:4px 0;"></p>
+      <h4 style="margin:8px 0 4px;" data-i18n="friends_my_hdr">Мої друзі:</h4>
+      <div id="friendsListBox" data-i18n="friends_empty">Список друзів порожній.</div>
+    </div>
+
+    <div id="friendsReqPane" style="display:none; margin-top:8px;">
+      <div id="friendRequestsBox" data-i18n="friends_no_reqs">Вхідних заявок у друзі немає.</div>
+    </div>
+
+    <div id="familyPane" style="display:none; margin-top:8px;">
+      <div id="familyInfoBox" class="card"></div>
+    </div>
+  </div>
+
+  <!-- 6. ОСОБИСТИЙ ЧАТ З ДРУГОМ -->
+  <div class="screen" id="privateChatScreen">
+    <button type="button" class="back-btn" data-tab="friendsScreen" data-i18n="pm_back_friends">← До списку друзів</button>
+    <h3 id="pmChatTitle" data-i18n="pm_default_title">✉️ Чат з гравцем</h3>
+    <div class="modern-chat-wrapper">
+      <div class="room-chat-box modern-chat-container" id="pmChatBox" style="margin:8px 0 10px;"></div>
+      <div class="modern-chat-input-bar">
+        <input type="text" id="pmMsgInput" placeholder="Написати особисте повідомлення... (Enter для відправки)" data-i18n-placeholder="ph_pm_msg" maxlength="300" autocomplete="off">
+        <button type="button" id="sendPmBtn" class="chat-send-btn" title="Надіслати (Enter)" data-i18n-title="btn_send_title">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. КРАМНИЦЯ ТА ДОНАТ -->
+  <div class="screen" id="shopScreen">
+    <button type="button" class="back-btn" data-tab="mainMenuScreen" data-i18n="btn_back_menu">← Назад у меню</button>
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+      <h3 data-i18n="shop_title">🛒 Крамниця, Донат та Кастомізація</h3>
+      <span id="shopWalletBadge" style="color:#f4a261; font-weight:bold; font-size:13px;">100 🪙 • 0 💎</span>
+    </div>
+    <div class="shop-tabs-bar" id="shopTabsBar" style="margin-top:8px;">
+      <button type="button" class="shop-tab-btn active" data-cat="all" data-i18n="shop_cat_all">Усе</button>
+      <button type="button" class="shop-tab-btn" data-cat="gift" data-i18n="shop_cat_gift">🎁 Подарунки</button>
+      <button type="button" class="shop-tab-btn" data-cat="frame" data-i18n="shop_cat_frame">🖼️ Рамки</button>
+      <button type="button" class="shop-tab-btn" data-cat="death_fx" data-i18n="shop_cat_death_fx">💥 Ефекти</button>
+      <button type="button" class="shop-tab-btn" data-cat="premium" data-i18n="shop_cat_premium">👑 VIP / Буст</button>
+      <button type="button" class="shop-tab-btn" data-cat="exchange" data-i18n="shop_cat_exchange">💎 Обмін 💎→🪙</button>
+      <button type="button" class="shop-tab-btn" data-cat="donate" data-i18n="shop_cat_donate">💳 Підтримка / Донат</button>
+    </div>
+    <p id="shopFeedback" style="font-size:13px; color:#2a9d8f; margin:6px 0;"></p>
+    <div id="shopItemsContainer" style="margin-top:8px;"></div>
+  </div>
+
+  <!-- 8. ПРАВИЛА ТА РОЛІ -->
+  <div class="screen" id="rulesScreen">
+    <button type="button" class="back-btn" data-tab="mainMenuScreen" data-i18n="btn_back_menu">← Назад у меню</button>
+    <h3 data-i18n="rules_title">📖 Правила гри та Ролі</h3>
+    <div class="card" style="margin-top:8px; font-size:13px; line-height:1.5; color:#ddd;" data-i18n-html="rules_how_to_html">
+      <b>Як проходить гра:</b><br>
+      • <b>Ніч (Чат Мафії — 30 с):</b> Мафія домовляється у таємному чаті (а Медіум підслуховує їх інкогніто).<br>
+      • <b>Ніч (Вибір цілей — 30 с):</b> Активні ролі обирають ціль.<br>
+      • <b>День (Обговорення — 60 с):</b> Усі живі гравці обговорюють події ночі.<br>
+      • <b>День (Голосування — 30 с):</b> Місто голосує за вигнання підозрюваного.
+    </div>
+
+    <div class="card" style="margin-top:8px;">
+      <h4 style="margin:0 0 6px; color:#f4a261; font-size:13px;" data-i18n="rules_teams_title">⚖️ Команди, Карма та Авторитет (натисніть трикутник ▾):</h4>
+      <details class="info-tri">
+        <summary class="info-tri-summary" data-i18n="rules_town_sum">🏙️ Команда Мирних</summary>
+        <div class="info-tri-box" data-i18n-html="rules_town_html">Головна мета — знайти на денному голосуванні та усунути <b>всю Мафію і Культ</b>. Мирні перемагають лише тоді, коли в живих не залишилось жодного гравця Мафії чи Культу.</div>
+      </details>
+      <details class="info-tri">
+        <summary class="info-tri-summary" data-i18n="rules_mafia_sum">🔫 Команда Мафії</summary>
+        <div class="info-tri-box" data-i18n-html="rules_mafia_html">Вночі домовляється в таємному чаті та вбиває ціль. Перемагає <b>лише тоді, коли всі Мирні та Культ повністю знищені</b>!</div>
+      </details>
+      <details class="info-tri">
+        <summary class="info-tri-summary" data-i18n="rules_cult_sum">🕯️ Культ</summary>
+        <div class="info-tri-box" data-i18n-html="rules_cult_html">Лідер Культу щоночі вербує одного мирного гравця у свою секту. Культ перемагає, коли Мафії вже немає і культистів більшість, або коли всі вороги вибули.</div>
+      </details>
+      <details class="info-tri">
+        <summary class="info-tri-summary" data-i18n="rules_neutral_sum">🃏 Нейтрали (Джокер, Амнезіак, Янгол)</summary>
+        <div class="info-tri-box" data-i18n-html="rules_neutral_html">У кожного нейтрала власна мета: <b>Джокер</b> виграє миттєво, якщо його стратять на денному голосуванні; <b>Амнезіак</b> після першої смерті переймає роль вибулого; <b>Янгол-Охоронець</b> перемагає з містом або якщо доживе до фіналу.</div>
+      </details>
+      <details class="info-tri">
+        <summary class="info-tri-summary" data-i18n="rules_karma_sum">🛡️ Карма (Порядність), ⭐ Авторитет та 🏅 Значки 100</summary>
+        <div class="info-tri-box" data-i18n-html="rules_karma_html"><b>Карма (0–100):</b> падає за достроковий вихід / неактивність у матчі (за вибором гравців -3) та скарги/мути (-10). Відновлюється за дограні матчі.<br><b>⭐ Авторитет:</b> показує ваш статус гравця (+4 за перемогу живим, +6 у ранговій, +3 якщо вибули, -2 при поразці). Відкриває столи з порогом авторитету та підіймає у Топ-100!<br><b>🏅 Значки 100:</b> Золотий (безстроковий для перших 100, при неактивності >180 днів передається у Топ-100), Срібний (у Топ-100 рейтингу), Мідний (у Топ-100 за сьогодні).</div>
+      </details>
+    </div>
+    <h4 style="margin:10px 0 6px;" data-i18n="rules_roles_hdr">🎭 Опис усіх ролей:</h4>
+    <div id="rulesRolesList"></div>
+  </div>
+
+  <!-- 9. ЗАГАЛЬНИЙ ЧАТ -->
+  <div class="screen" id="globalChatScreen">
+    <button type="button" class="back-btn" data-tab="mainMenuScreen" data-i18n="btn_back_menu">← Назад у меню</button>
+    <h3 data-i18n="global_title">🌍 Загальний чат</h3>
+    <div class="modern-chat-wrapper">
+      <div class="room-chat-box modern-chat-container" id="globalChatBox" style="margin:8px 0 10px;"></div>
+      <div class="modern-chat-input-bar">
+        <input type="text" id="globalMsgInput" placeholder="Повідомлення у загальний чат... (Enter для відправки)" data-i18n-placeholder="ph_global_msg" maxlength="250" autocomplete="off">
+        <button type="button" id="sendGlobalBtn" class="chat-send-btn" title="Надіслати (Enter)" data-i18n-title="btn_send_title">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 10. ТОП ГРАВЦІВ -->
+  <div class="screen" id="topScreen">
+    <button type="button" class="back-btn" data-tab="mainMenuScreen" data-i18n="btn_back_menu">← Назад у меню</button>
+    <h3 data-i18n="top_title">🏆 Топ-100 гравців</h3>
+    <div style="display:flex; gap:6px; margin:10px 0;">
+      <button type="button" id="topAllBtn" style="padding:8px; font-size:13px;" data-i18n="top_all_btn">За весь час</button>
+      <button type="button" id="topTodayBtn" class="secondary" style="padding:8px; font-size:13px;" data-i18n="top_today_btn">За сьогодні</button>
+    </div>
+    <div id="leaderboardList"></div>
+  </div>
+
+  <!-- 11. НАЛАШТУВАННЯ -->
+  <div class="screen" id="settingsScreen">
+    <button type="button" class="back-btn" data-tab="mainMenuScreen" data-i18n="btn_back_menu">← Назад у меню</button>
+    <h3 data-i18n="settings_title">⚙️ Налаштування</h3>
+    <div class="card" style="margin-top:10px;">
+      <div class="settings-group-divider" data-i18n="settings_lang_grp">🌐 Мови та переклад</div>
+      <label class="hint" style="margin-top:6px;" data-i18n="settings_lang">Мова інтерфейсу:</label>
+      <select id="uiLangSelect">
+        <option value="ua">🇺🇦 Українська (UA)</option>
+        <option value="en">🇬🇧 English (EN)</option>
+      </select>
+      <div style="margin-top:8px;">
+        <label class="hint" data-i18n="settings_tr_lang_lbl">🌐 Мова перекладу СМС (в 1 клік):</label>
+        <select id="settingsTranslateLang">
+          <option value="uk">🇺🇦 Українська</option>
+          <option value="en">🇬🇧 English</option>
+          <option value="ru">❓ росийский</option>
+          <option value="be">🏳️ Беларуская</option>
+          <option value="kk">🇰🇿 Қазақша</option>
+          <option value="az">🇦🇿 Azərbaycan</option>
+          <option value="ka">🇬🇪 ქართული</option>
+          <option value="hy">🇦🇲 Հայերեն</option>
+          <option value="ro">🇲🇩 Română</option>
+          <option value="uz">🇺🇿 Oʻzbekcha</option>
+          <option value="pl">🇵🇱 Polski</option>
+          <option value="de">🇩🇪 Deutsch</option>
+          <option value="es">🇪🇸 Español</option>
+          <option value="fr">🇫🇷 Français</option>
+          <option value="it">🇮🇹 Italiano</option>
+          <option value="tr">🇹🇷 Türkçe</option>
+          <option value="pt">🇵🇹 Português</option>
+          <option value="cs">🇨🇿 Čeština</option>
+          <option value="ar">🇸🇦 العربية</option>
+          <option value="ja">🇯🇵 日本語</option>
+        </select>
+      </div>
+
+      <div class="settings-group-divider" data-i18n="settings_theme_grp">🎨 Тема оформлення та логотип</div>
+      <label class="hint" style="margin-top:6px;" data-i18n="settings_logo_lbl">Стиль логотипу та кольорова тема гри:</label>
+      <select id="logoThemeSelect">
+        <option value="gold" data-i18n="logo_gold">👑 Хрещений Батько (Золотий металік)</option>
+        <option value="ruby" data-i18n="logo_ruby">♦️ Синдикат (Рубін і Сталь)</option>
+        <option value="emerald" data-i18n="logo_emerald">🐍 Тінь Ночі (Смарагдовий неон)</option>
+      </select>
+      <div id="settingsLogoPreview" style="margin-top:10px;"></div>
+      <div class="toggle-row" style="margin-top:8px;">
+        <span data-i18n="settings_anim_toggle">Плавні анімації та підсвічування</span>
+        <label class="switch">
+          <input type="checkbox" id="settingsAnimToggle" checked>
+          <span class="slider-round"></span>
+        </label>
+      </div>
+      <div class="toggle-row" style="margin-top:6px;">
+        <span data-i18n="settings_show_badge">Показувати значок 100 біля ніку</span>
+        <label class="switch">
+          <input type="checkbox" id="settingsBadgeToggle" checked>
+          <span class="slider-round"></span>
+        </label>
+      </div>
+
+      <div class="settings-group-divider" data-i18n="settings_audio_grp">🔊 Звук і сповіщення телефону</div>
+      <div class="toggle-row" style="margin-top:6px;">
+        <span data-i18n="settings_sfx_toggle">Звукові ефекти інтерфейсу та подій</span>
+        <label class="switch">
+          <input type="checkbox" id="settingsSoundToggle" checked>
+          <span class="slider-round"></span>
+        </label>
+      </div>
+      <div style="margin-top:8px;">
+        <div style="display:flex; justify-content:space-between; font-size:12px; color:#ccc;">
+          <span data-i18n="settings_vol_lbl">Гучність звуків:</span>
+          <b id="settingsVolumeVal" style="color:#f4a261;">70%</b>
+        </div>
+        <input type="range" id="settingsVolumeSlider" min="0" max="100" value="70" class="styled-slider" style="margin-top:4px;">
+      </div>
+      <button type="button" id="enablePushNotificationsBtn" class="secondary" style="margin-top:8px; font-size:12px; border-color:#80ffdb; color:#80ffdb;" data-i18n="settings_push_btn">🔔 Увімкнути сповіщення в шторці телефону</button>
+
+      <div class="settings-group-divider" data-i18n="settings_chat_grp">💬 Чат, шрифт і безпека</div>
+      <div style="margin-top:6px;">
+        <label class="hint" data-i18n="settings_font_lbl">Розмір шрифту (чат та інтерфейс):</label>
+        <select id="settingsChatFontSize">
+          <option value="11" data-i18n="font_opt_11">Малий (11px) — компактний</option>
+          <option value="13" selected data-i18n="font_opt_13">Стандартний (13px)</option>
+          <option value="15" data-i18n="font_opt_15">Великий (15px) — зручний для очей</option>
+          <option value="17" data-i18n="font_opt_17">Дуже великий (17px)</option>
+        </select>
+        <div id="fontSizeLivePreview" style="margin-top:6px; padding:8px 10px; border-radius:8px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); color:#e2e8f0; line-height:1.4;" data-i18n-html="font_preview_html">
+          👁️ Попередній перегляд тексту: <b>Шериф перевіряє підозрюваного вночі.</b>
+        </div>
+      </div>
+      <div style="margin-top:8px;">
+        <label class="hint" data-i18n="settings_chat_style_lbl">Стиль бульбашок повідомлень:</label>
+        <select id="settingsChatStyle">
+          <option value="bubbles" selected data-i18n="style_opt_bubbles">Сучасні неонові бабли (закруглені)</option>
+          <option value="classic" data-i18n="style_opt_classic">Класичні компактні лінії</option>
+        </select>
+      </div>
+      <div class="settings-group-divider" id="profanitySettingsSection" data-i18n="settings_profanity_title">🛡️ Фільтр нецензурних слів</div>
+      <div class="toggle-row" style="margin-top:6px;">
+        <span data-i18n="settings_profanity_toggle">Ввімкнути приховування лайки (***)</span>
+        <label class="switch">
+          <input type="checkbox" id="settingsProfanityToggle" checked>
+          <span class="slider-round"></span>
+        </label>
+      </div>
+      <div style="margin-top:6px;">
+        <label class="hint" data-i18n="settings_profanity_words">Ваші заборонені слова (через кому):</label>
+        <div style="display:flex; gap:6px;">
+          <input type="text" id="settingsCustomWordsInput" placeholder="слово1, слово2..." data-i18n-placeholder="ph_custom_words" style="margin:0; font-size:12px;">
+          <button type="button" id="saveCustomWordsBtn" class="secondary" style="width:auto; padding:0 10px; margin:0; font-size:12px;" data-i18n="settings_profanity_save">💾 Зберегти</button>
+        </div>
+        <div id="customWordsFeedback" style="font-size:11px; color:#80ffdb; margin-top:4px;"></div>
+      </div>
+
+      <div class="settings-group-divider" data-i18n="settings_acc_grp">👤 Профіль і відновлення пароля</div>
+      <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(244,162,97,0.3); border-radius:8px; padding:8px; margin-top:6px; font-size:12px;">
+        <span style="color:#aaa;" data-i18n="settings_rec_code_lbl">🔑 Код відновлення пароля (збережіть його):</span>
+        <b id="settingsRecoveryCode" style="color:#ffd166; margin-left:6px; letter-spacing:1.2px;">------</b>
+      </div>
+      <div style="margin-top:8px;">
+        <label class="hint" data-i18n="settings_email_lbl">E-mail для відновлення доступу:</label>
+        <div style="display:flex; gap:6px;">
+          <input type="email" id="settingsEmailInput" placeholder="example@gmail.com" style="margin:0;">
+          <button type="button" id="saveSettingsEmailBtn" class="secondary" style="width:auto; padding:0 12px; margin:0;" data-i18n="btn_save">Зберегти</button>
+        </div>
+      </div>
+      <div id="changeNickWrap" style="margin-top:10px;">
+        <label class="hint" data-i18n="settings_nick_lbl">Змінити нікнейм (до 10 символів, 1 раз за весь час):</label>
+        <div style="display:flex; gap:6px;">
+          <input type="text" id="newNickInput" maxlength="10" placeholder="Новий нікнейм..." data-i18n-placeholder="ph_new_nick" style="margin:0;">
+          <button type="button" id="saveNewNickBtn" class="secondary" style="width:auto; padding:0 12px; margin:0;" data-i18n="btn_save">Зберегти</button>
+        </div>
+      </div>
+      <button type="button" id="logoutBtn" style="margin-top:14px; background:#2b2f3a;" data-i18n="btn_logout">🚪 Вийти з акаунту</button>
+      <button type="button" id="deleteGdprBtn" style="margin-top:8px; background:#3a1c22; border:1px solid #e63946; font-size:12px;" data-i18n="btn_gdpr_del">🗑️ Видалити акаунт та всі дані (GDPR)</button>
+      <div style="margin-top:12px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.08); display:flex; justify-content:space-between; align-items:center; font-size:12px; color:#94a3b8;">
+        <span data-i18n="settings_version_lbl">Версія гри:</span>
+        <button type="button" id="settingsVersionBadge" class="app-version-pill" data-i18n-title="version_changelog_hint" title="Що нового в оновленні">v1.2.2</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 12. ЧАТ З РОЗРОБНИКОМ ТА НОВИНИ -->
+  <div class="screen" id="devScreen">
+    <button type="button" class="back-btn" data-tab="mainMenuScreen" data-i18n="btn_back_menu">← Назад у меню</button>
+    <h3 data-i18n="dev_news_title">📰 Новини розробки гри</h3>
+    <div id="devPostsContainer" style="margin:10px 0;"></div>
+    <div class="card">
+      <h4 data-i18n="dev_email_hdr">Зв'язок з розробником на E-mail</h4>
+      <p style="font-size:12px; color:#aaa; margin:4px 0;" data-i18n="dev_email_addr">Пошта розробника: itaminx16@gmail.com</p>
+      <input type="text" id="emailSubject" placeholder="Тема звернення..." data-i18n-placeholder="ph_email_subj">
+      <textarea id="emailBody" rows="3" placeholder="Текст повідомлення..." data-i18n-placeholder="ph_email_body"></textarea>
+      <button type="button" id="sendEmailBtn" data-i18n="dev_email_send">✉️ Надіслати на itaminx16@gmail.com</button>
+    </div>
+  </div>
+</div>
+
+<!-- МОДАЛЬНІ ВІКНА -->
+<div class="modal-overlay" id="devCodeModal">
+  <div class="modal-box" style="text-align:center;">
+    <h4 style="color:#f4a261; margin-bottom:6px;" data-i18n="dev_modal_title">🔐 Перевірка розробника</h4>
+    <input type="password" id="modalDevCodeInput" placeholder="Секретний код..." data-i18n-placeholder="ph_secret_code">
+    <p id="devModalError" class="error-text"></p>
+    <div style="display:flex; gap:6px; margin-top:10px;">
+      <button type="button" id="confirmDevCodeBtn" style="background:#2a9d8f;" data-i18n="btn_confirm">Підтвердити</button>
+      <button type="button" class="secondary" id="cancelDevCodeBtn" data-i18n="btn_cancel">Скасувати</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="avatarZoomModal">
+  <div class="modal-box" style="text-align:center;">
+    <div class="zoomed-avatar-circle" id="zoomedAvatarPreview"></div>
+    <p style="font-size:12px; color:#f4a261; margin-top:10px;" data-i18n="zoom_avatar_hint">Натисни на фото ще раз, щоб змінити аватар, стать або опис</p>
+    <button type="button" class="secondary" id="closeZoomModalBtn" style="margin-top:10px;" data-i18n="btn_close">Закрити</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="editAvatarModal">
+  <div class="modal-box">
+    <h4 style="margin-bottom:8px;" data-i18n="edit_prof_title">✏️ Редагування профілю</h4>
+    <div class="avatar-grid" id="editAvatarGrid"></div>
+    <label class="hint" data-i18n="edit_upload_photo">Або завантаж нове фото з пристрою:</label>
+    <input type="file" id="editCustomPhoto" accept="image/*">
+    <label class="hint" data-i18n="edit_ring_color_lbl">Стандартний колір ободка навколо фото:</label>
+    <div id="avatarBorderColorPicker" class="ring-color-picker">
+      <button type="button" class="ring-color-swatch" data-ring-color="#f4a261" style="background:#f4a261;" title="Gold"></button>
+      <button type="button" class="ring-color-swatch" data-ring-color="#e63946" style="background:#e63946;" title="Crimson"></button>
+      <button type="button" class="ring-color-swatch" data-ring-color="#2a9d8f" style="background:#2a9d8f;" title="Emerald"></button>
+      <button type="button" class="ring-color-swatch" data-ring-color="#38bdf8" style="background:#38bdf8;" title="Sapphire"></button>
+      <button type="button" class="ring-color-swatch" data-ring-color="#9b5de5" style="background:#9b5de5;" title="Violet"></button>
+      <button type="button" class="ring-color-swatch" data-ring-color="#fb7185" style="background:#fb7185;" title="Rose"></button>
+      <button type="button" class="ring-color-swatch" data-ring-color="#cbd5e1" style="background:#cbd5e1;" title="Silver"></button>
+      <button type="button" class="ring-color-swatch" data-ring-color="#475569" style="background:#475569;" title="Noir"></button>
+    </div>
+    <label class="hint" data-i18n="edit_gender_lbl">Стать:</label>
+    <select id="editGenderSelect">
+      <option value="male" data-i18n="gender_male">👨 Чоловік</option>
+      <option value="female" data-i18n="gender_female">👩 Жінка</option>
+      <option value="other" data-i18n="gender_other">🎭 Інше</option>
+    </select>
+    <label class="hint" data-i18n="edit_bio_lbl">Опис профілю:</label>
+    <textarea id="editBioInput" rows="2"></textarea>
+    <div style="display:flex; gap:6px; margin-top:8px;">
+      <button type="button" id="saveProfileEditBtn" style="background:#2a9d8f;" data-i18n="btn_save">Зберегти</button>
+      <button type="button" class="secondary" id="cancelProfileEditBtn" data-i18n="btn_cancel">Скасувати</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="badgeInfoModal">
+  <div class="modal-box">
+    <h4 id="badgeModalTitle" style="color:#f4a261; margin-bottom:6px;" data-i18n="badge_modal_default">🏅 Значок 100</h4>
+    <p id="badgeModalDesc" style="font-size:13px; color:#ddd; line-height:1.4; margin-bottom:12px;"></p>
+    <div class="toggle-row">
+      <span data-i18n="badge_show_toggle">Відображати значок біля ніку</span>
+      <label class="switch">
+        <input type="checkbox" id="modalBadgeToggle" checked>
+        <span class="slider-round"></span>
+      </label>
+    </div>
+    <button type="button" class="secondary" id="closeBadgeModalBtn" style="margin-top:12px;" data-i18n="btn_got_it">Зрозуміло</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="publicProfileModal">
+  <div class="modal-box" style="text-align:center;">
+    <div class="main-avatar" id="pubProfAvatar" style="margin:0 auto 8px;"></div>
+    <h3 id="pubProfNick" data-i18n="pub_prof_default">Гравець</h3>
+    <p id="pubProfGender" style="font-size:12px; color:#f4a261; margin-top:2px;"></p>
+    <p id="pubProfBio" style="font-size:12px; color:#aaa; margin:4px 0 6px;"></p>
+    <div id="pubProfBioTrWrap" style="margin-bottom:8px;"></div>
+    <div class="stats-bar" id="pubProfStats"></div>
+    <button type="button" id="pubProfAddFriendBtn" style="margin-top:10px; background:#2a9d8f;" data-i18n="pub_add_friend">➕ Додати в друзі</button>
+    <button type="button" id="pubProfRemoveFriendBtn" class="secondary" style="margin-top:6px; color:#ff6b6b; display:none;" data-i18n="pub_remove_friend">✕ Видалити з друзів</button>
+    <button type="button" id="pubProfSendSmsBtn" class="secondary" style="margin-top:6px;" data-i18n="pub_send_sms">✉️ Написати СМС</button>
+    <button type="button" id="pubProfReportBtn" class="secondary" style="margin-top:6px; color:#ff6b6b;" data-i18n="pub_report">🚩 Поскаржитись на гравця</button>
+    <button type="button" class="secondary" id="closePubProfBtn" style="margin-top:6px;" data-i18n="btn_close">Закрити</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="roomPlayersModal">
+  <div class="modal-box">
+    <h4 id="roomModalTitle" style="color:#f4a261; margin-bottom:6px;" data-i18n="room_players_modal_title">👥 Гравці в кімнаті</h4>
+    <p id="roomModalStatus" style="font-size:12px; color:#aaa; margin-bottom:8px;"></p>
+    <div id="roomModalPlayersList" style="max-height:240px; overflow-y:auto;"></div>
+    <button type="button" class="secondary" id="closeRoomPlayersModalBtn" style="margin-top:10px;" data-i18n="btn_close">Закрити</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="matchCardModal">
+  <div class="modal-box" style="text-align:center;">
+    <h4 style="color:#f4a261; margin-bottom:8px;" data-i18n="match_card_title">📸 Картка результатів матчу</h4>
+    <canvas id="matchSummaryCanvas" width="360" height="440" style="width:100%; border-radius:10px; border:1px solid #444;"></canvas>
+    <button type="button" id="downloadMatchCardBtn" style="margin-top:8px; background:#2a9d8f;" data-i18n="match_card_save">💾 Зберегти / Поділитися</button>
+    <button type="button" class="secondary" id="closeMatchCardBtn" style="margin-top:6px;" data-i18n="btn_close">Закрити</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="reportPlayerModal">
+  <div class="modal-box">
+    <h4 style="color:#e63946; margin-bottom:6px;" data-i18n="rep_modal_title">🚩 Подати скаргу на гравця</h4>
+    <p style="font-size:12px; color:#aaa; margin-bottom:8px;"><span data-i18n="rep_offender_lbl">Порушник:</span> <b id="reportModalTargetNick" style="color:#fff;"></b></p>
+    
+    <label class="hint" data-i18n="rep_cat_lbl">Категорія порушення:</label>
+    <select id="reportCategorySelect">
+      <option value="Образи та нецензурна лексика" data-i18n="rep_cat_insults">🤬 Образи та нецензурна лексика</option>
+      <option value="Злив ролей / Гра не за свою команду" data-i18n="rep_cat_gamethrow">🎭 Злив ролей / Гра не за свою команду</option>
+      <option value="Спам або флуд у чаті" data-i18n="rep_cat_spam">📢 Спам або флуд у чаті</option>
+      <option value="Шантаж або токсична поведінка" data-i18n="rep_cat_blackmail">⚠️ Шантаж або токсична поведінка</option>
+      <option value="Інше" data-i18n="rep_cat_other">📝 Інше порушення</option>
+    </select>
+
+    <label class="hint" data-i18n="rep_details_lbl">Уточнення або деталі скарги:</label>
+    <textarea id="reportDetailsInput" rows="2" placeholder="Опишіть ситуацію..." data-i18n-placeholder="ph_rep_details"></textarea>
+
+    <label class="hint" data-i18n="rep_ss_lbl">Додати скріншот (завантажте або вставте Ctrl+V):</label>
+    <input type="file" id="reportScreenshotInput" accept="image/*" style="font-size:11px;">
+    <div id="reportScreenshotPreviewWrap" style="display:none; margin-top:6px; text-align:center;">
+      <img id="reportScreenshotPreview" style="max-width:100%; max-height:140px; border-radius:6px; border:1px solid #555;">
+      <button type="button" id="removeReportScreenshotBtn" class="secondary" style="margin-top:4px; padding:3px 8px; font-size:11px; color:#ff6b6b;" data-i18n="rep_ss_remove">✕ Прибрати скріншот</button>
+    </div>
+    <div style="font-size:11px; color:#888; margin-top:4px;" data-i18n="rep_auto_ctx">💡 Останні 12 повідомлень з чату від вас та порушника додадуться автоматично для перевірки модератором.</div>
+
+    <div style="display:flex; gap:6px; margin-top:10px;">
+      <button type="button" id="submitReportModalBtn" style="background:#e63946;" data-i18n="rep_submit_btn">Надіслати скаргу</button>
+      <button type="button" class="secondary" id="cancelReportModalBtn" data-i18n="btn_cancel">Скасувати</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="rewardReceivedModal">
+  <div class="modal-box" style="text-align:center; border:2px solid #f4a261; background:linear-gradient(180deg, #241e17 0%, #15161b 100%);">
+    <div style="font-size:36px; margin-bottom:4px;">🎉 🎁 ✨</div>
+    <h3 style="color:#ffd166; margin-bottom:6px;" data-i18n="reward_title">Вам нараховано нагороду!</h3>
+    <div id="rewardItemsDisplay" style="display:flex; justify-content:center; gap:12px; margin:12px 0;"></div>
+    <div id="rewardCommentDisplay" style="background:rgba(255,255,255,0.06); padding:8px 12px; border-radius:8px; font-size:12px; color:#ddd; margin-bottom:12px; font-style:italic;"></div>
+    <button type="button" id="claimRewardBtn" style="background:#2a9d8f; font-weight:bold; padding:10px 18px;" data-i18n="reward_claim_btn">Чудово! Забрати нагороду 🚀</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="screenshotViewModal">
+  <div class="modal-box" style="text-align:center; max-width:90vw;">
+    <h4 style="color:#f4a261; margin-bottom:8px;" data-i18n="ss_view_title">🖼️ Перегляд скріншота скарги</h4>
+    <img id="screenshotViewImg" style="max-width:100%; max-height:70vh; border-radius:8px; border:1px solid #444;">
+    <button type="button" class="secondary" id="closeScreenshotViewBtn" style="margin-top:10px;" data-i18n="btn_close">Закрити</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="roleRevealModal">
+  <div class="modal-box" style="text-align:center; border:2px solid #f4a261; background:linear-gradient(180deg, #1e222d 0%, #13151b 100%); max-width:340px;">
+    <div style="font-size:11px; text-transform:uppercase; letter-spacing:1.2px; color:#8892b0; margin-bottom:8px;" data-i18n="role_reveal_hdr">Ваша роль у цій партії</div>
+    <div id="roleRevealImgWrap" style="width:86px; height:86px; margin:0 auto 10px; border-radius:50%; overflow:hidden; border:2px solid #f4a261; background:#1c1f26; display:flex; align-items:center; justify-content:center; font-size:36px;">🎭</div>
+    <h3 id="roleRevealTitle" style="color:#ffd166; margin:0 0 4px; font-size:20px;">Шериф</h3>
+    <div id="roleRevealTeam" style="font-size:12px; font-weight:bold; color:#80ffdb; margin-bottom:10px;">Команда: Місто</div>
+    <div id="roleRevealDesc" style="background:rgba(255,255,255,0.05); padding:10px 12px; border-radius:8px; font-size:12px; color:#e2e8f0; line-height:1.45; margin-bottom:14px; text-align:left;"></div>
+    <button type="button" id="closeRoleRevealBtn" style="background:#2a9d8f; font-weight:bold; padding:10px 18px;" data-i18n="role_reveal_close">Зрозуміло, до гри! 🎭</button>
+  </div>
+</div>
+
+<!-- ВІТАЛЬНЕ ВІКНО РОЗРОБНИКА -->
+<div class="modal-overlay" id="devWelcomeModal">
+  <div class="modal-box dev-welcome-box">
+    <div style="text-align:center; margin-bottom:10px;">
+      <div style="font-size:36px; margin-bottom:4px;">🎩 🕯️ 🎭</div>
+      <h3 style="color:#ffd166; margin:0;" data-i18n="welcome_title">Вітання від розробника!</h3>
+      <span style="font-size:11px; color:#f4a261;" data-i18n="welcome_sub">Mafia Club: Online • Перший публічний реліз</span>
+    </div>
+    <div class="dev-welcome-text" data-i18n-html="welcome_body_html">
+      <p>Привіт, детективе! 🕵️</p>
+      <p>Мене звати <b>Itaminx</b>, і це — <b>моя перша онлайн-гра</b>. Я вклав у неї душу, щоб повернути живу атмосферу класичної настільної «Мафії» прямо в телефон та браузер.</p>
+      <p>Попереду заплановано багато оновлень: нові ролі, турніри Сімей, сезонні події, ще більше кастомізації та ігрових фішок!</p>
+      <p style="color:#80ffdb; margin-bottom:0;">Дуже чекаю на вашу <b>підтримку, чесну критику та будь-які ідеї</b> — найкращі пропозиції гравців обов'язково потраплять у наступні апдейти!</p>
+    </div>
+    <div style="margin-top:10px;">
+      <textarea id="welcomeIdeaInput" rows="2" placeholder="Напишіть ідею, баг або побажання розробнику..." data-i18n-placeholder="ph_welcome_idea" style="margin:0; font-size:12px;"></textarea>
+      <p id="welcomeIdeaFeedback" style="font-size:11px; color:#80ffdb; margin:4px 0 0; min-height:14px;"></p>
+      <div style="display:flex; gap:6px; margin-top:6px;">
+        <button type="button" id="submitWelcomeIdeaBtn" class="secondary" style="flex:1; margin:0; font-size:12px; border-color:#f4a261; color:#ffd166;" data-i18n="welcome_btn_ideas">💡 Надіслати ідею / відгук</button>
+        <button type="button" id="closeDevWelcomeBtn" style="flex:1; margin:0; background:#2a9d8f; font-weight:bold; font-size:12px;" data-i18n="welcome_btn_start">🎭 Перейти до гри!</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ВІКНО МІНІ-ІГОР В ОЧІКУВАННІ ГРИ -->
+<div class="modal-overlay" id="lobbyMinigamesModal">
+  <div class="modal-box" style="max-width:420px; width:94%;">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:8px;">
+      <h4 style="color:#ffd166; margin:0; font-size:15px;" data-i18n="mg_title">🎮 Міні-ігри в очікуванні старту</h4>
+      <span id="mgLobbyCountdownText" class="timer-pill" style="display:none; background:#f4a261; color:#111; font-size:11px;">⏳ Старт через 40 с</span>
+    </div>
+    <div class="mg-tabs-bar">
+      <button type="button" class="mg-tab-btn active" data-mg="runner" data-i18n="mg_tab_runner">🏃 Нуар-Раннер</button>
+      <button type="button" class="mg-tab-btn" data-mg="mafia_jump" data-i18n="mg_tab_jump">⬆️ Мафія Джамп</button>
+      <button type="button" class="mg-tab-btn" data-mg="cannon" data-i18n="mg_tab_cannon">💥 Гармата</button>
+      <button type="button" class="mg-tab-btn" data-mg="snake" data-i18n="mg_tab_snake">🐍 Змійка</button>
+      <button type="button" class="mg-tab-btn" data-mg="tetris" data-i18n="mg_tab_tetris">🧱 Тетріс</button>
+      <button type="button" class="mg-tab-btn" data-mg="memory" data-i18n="mg_tab_memory">🃏 Пам'ять ролей</button>
+      <button type="button" class="mg-tab-btn" data-mg="whack" data-i18n="mg_tab_whack">🎯 Впіймай Мафію</button>
+    </div>
+    <div id="mgStageContainer" class="mg-stage-box"></div>
+    <div id="mgLeaderboardBox" class="mg-lb-wrap"></div>
+    <button type="button" class="secondary" id="closeLobbyMinigamesBtn" style="margin-top:10px;" data-i18n="btn_close">Закрити</button>
+  </div>
+</div>
+
+<!-- ВИБІР МОВИ ДЛЯ ПЕРЕКЛАДУ ПОВІДОМЛЕННЯ -->
+<div class="modal-overlay" id="translateLangModal">
+  <div class="modal-box" style="max-width:360px; width:92%; border:1px solid rgba(128,255,219,0.45);">
+    <h4 style="color:#80ffdb; margin:0 0 4px;" data-i18n="tr_choose_lang">🌐 Оберіть мову перекладу</h4>
+    <div style="font-size:11px; color:#94a3b8; margin-bottom:6px;" data-i18n="tr_choose_hint">Вибрана мова збережеться — наступні повідомлення перекладатимуться в 1 клік!</div>
+    <div id="trModalSnippet" style="font-size:12px; color:#cbd5e1; background:rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:7px 9px; margin-bottom:10px; max-height:66px; overflow:hidden;"></div>
+    <div id="trModalLangGrid" class="tr-lang-grid"></div>
+    <button type="button" class="secondary" id="closeTranslateLangModalBtn" style="margin-top:10px;" data-i18n="btn_cancel">Скасувати</button>
+  </div>
+</div>
+
+<!-- ВІДНОВЛЕННЯ ПАРОЛЯ -->
+<div class="modal-overlay" id="forgotPasswordModal">
+  <div class="modal-box" style="max-width:380px; width:92%;">
+    <h4 style="color:#ffd166; margin:0 0 6px;" data-i18n="fp_title">🔑 Відновлення пароля</h4>
+    <div class="auth-tabs" style="margin-bottom:8px;">
+      <button type="button" class="auth-tab-btn active" id="fpTabCode" data-i18n="fp_tab_code">🔑 Код / E-mail</button>
+      <button type="button" class="auth-tab-btn" id="fpTabAdmin" data-i18n="fp_tab_admin">📩 Через Адміна</button>
+    </div>
+    <div id="fpCodePane">
+      <p style="font-size:11.5px; color:#94a3b8; margin:0 0 6px;" data-i18n="fp_code_hint">Введіть ваш нікнейм (або E-mail), код відновлення з Налаштувань (або прив'язаний E-mail) та новий пароль.</p>
+      <input type="text" id="fpIdentifierInput" placeholder="Нікнейм або E-mail..." data-i18n-placeholder="fp_ph_id">
+      <input type="text" id="fpRecoveryCodeInput" placeholder="Код відновлення або ваш E-mail..." data-i18n-placeholder="fp_ph_code">
+      <input type="password" id="fpNewPassCodeInput" placeholder="Новий пароль (мін. 6 символів)..." data-i18n-placeholder="fp_ph_newpass">
+      <button type="button" id="fpSubmitCodeBtn" style="background:#2a9d8f; margin-top:6px;" data-i18n="fp_btn_reset">✅ Змінити пароль</button>
+    </div>
+    <div id="fpAdminPane" style="display:none;">
+      <p style="font-size:11.5px; color:#94a3b8; margin:0 0 6px;" data-i18n="fp_admin_hint">Не маєте коду? Надішліть запит Адміну або Братіку — після підтвердження ваш новий пароль запрацює.</p>
+      <input type="text" id="fpAdminNickInput" placeholder="Ваш точний нікнейм..." data-i18n-placeholder="ph_player_nick">
+      <input type="password" id="fpAdminNewPassInput" placeholder="Бажаний новий пароль (мін. 6 символів)..." data-i18n-placeholder="fp_ph_newpass">
+      <input type="text" id="fpAdminNoteInput" placeholder="Примітка (напр. ваш Telegram або причина)..." data-i18n-placeholder="fp_ph_note">
+      <button type="button" id="fpSubmitAdminBtn" style="background:#f4a261; color:#111; margin-top:6px;" data-i18n="fp_btn_send_req">📩 Надіслати запит адміну</button>
+    </div>
+    <p id="fpFeedback" style="font-size:12px; margin-top:8px; min-height:16px;"></p>
+    <button type="button" class="secondary" id="closeForgotPasswordBtn" style="margin-top:6px;" data-i18n="btn_close">Закрити</button>
+  </div>
+</div>
+
+<!-- СТВОРЕННЯ СЕКРЕТНОГО КОДУ БРАТІКА -->
+<div class="modal-overlay" id="setupBratikCodeModal">
+  <div class="modal-box" style="text-align:center; border:2px solid #f4a261;">
+    <div style="font-size:34px; margin-bottom:4px;">🤝 🔐</div>
+    <h4 style="color:#ffd166; margin:0 0 6px;" data-i18n="bratik_setup_title">Вас призначено Братіком!</h4>
+    <p style="font-size:12px; color:#cbd5e1; margin:0 0 10px;" data-i18n="bratik_setup_desc">Тепер у вас є повний довірений доступ до адмін-панелі. Придумайте свій особистий секретний код — його потрібно буде вводити при кожному вході:</p>
+    <input type="password" id="bratikNewSecretCodeInput" placeholder="Ваш секретний код (3-16 символів)..." data-i18n-placeholder="ph_secret_code">
+    <p id="bratikCodeError" class="error-text"></p>
+    <button type="button" id="saveBratikCodeBtn" style="background:#2a9d8f; margin-top:8px;" data-i18n="btn_save">Зберегти код</button>
+  </div>
+</div>
+
+<!-- КУПІВЛЯ / ДОДАВАННЯ БОТІВ У ЛОБІ -->
+<div class="modal-overlay" id="hireBotsModal">
+  <div class="modal-box" style="max-width:440px; width:94%;">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:6px;">
+      <h4 style="color:#80ffdb; margin:0;" data-i18n="bots_modal_title">🤖 Додати розумних ботів</h4>
+      <span id="hireBotsPriceTag" style="font-size:12px; color:#ffd166; font-weight:bold;">25 🪙 / бот</span>
+    </div>
+    <p style="font-size:11.5px; color:#94a3b8; margin:0 0 8px;" data-i18n="bots_modal_desc">Кожен з 16 ботів має унікальний характер, голос і тактику в чаті. Оберіть потрібних ботів або додайте випадкових:</p>
+    <div style="display:flex; gap:6px; margin-bottom:8px;">
+      <button type="button" id="hireRandom3BotsBtn" style="flex:1; margin:0; padding:7px; font-size:12px; background:#2a9d8f;" data-i18n="bots_add_3">🎲 +3 випадкових</button>
+      <button type="button" id="hireSelectedBotsBtn" style="flex:1; margin:0; padding:7px; font-size:12px; background:#f4a261; color:#111; font-weight:bold;" data-i18n="bots_hire_selected">✅ Додати обраних</button>
+    </div>
+    <p id="hireBotsFeedback" style="font-size:12px; color:#ffd166; margin:4px 0; min-height:14px;"></p>
+    <div id="hireBotsGrid" class="bot-hire-grid" style="max-height:280px; overflow-y:auto;"></div>
+    <button type="button" class="secondary" id="closeHireBotsBtn" style="margin-top:8px;" data-i18n="btn_close">Закрити</button>
+  </div>
+</div>
+
+<!-- ВИБІР ДІЇ ПРОТИ ДОСТРОКОВОГО ВИХОДУ / AFK -->
+<div class="modal-overlay" id="afkPenaltyModal">
+  <div class="modal-box" style="max-width:400px; width:94%; border:2px solid #e63946;">
+    <h4 style="color:#ff6b6b; margin:0 0 6px;" data-i18n="afk_modal_title">⚠️ Гравці покинули гру достроково</h4>
+    <p style="font-size:12px; color:#cbd5e1; margin:0 0 8px;" data-i18n="afk_modal_desc">Ці гравці вийшли завчасно або не зробили жодного ходу за кілька днів. Можливо, стався збій зв'язку або це було зроблено навмисно — оберіть реакцію:</p>
+    <div id="afkPlayersActionList" style="max-height:260px; overflow-y:auto;"></div>
+    <button type="button" class="secondary" id="closeAfkPenaltyModalBtn" style="margin-top:10px;" data-i18n="btn_close">Закрити</button>
+  </div>
+</div>
+
+<!-- ВІКНО ОНОВЛЕННЯ / ЩО НОВОГО -->
+<div class="modal-overlay" id="updateChangelogModal">
+  <div class="modal-box" style="max-width:420px; width:94%; border:2px solid #f4a261;">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:6px;">
+      <span id="changelogVersionBadge" class="tag tag-legend" style="margin:0;">v1.2.2</span>
+      <span id="changelogDate" style="font-size:11px; color:#94a3b8;"></span>
+    </div>
+    <h4 id="changelogTitle" style="color:#ffd166; margin:0 0 8px;">✨ Що нового в оновленні</h4>
+    <ul id="changelogItemsList" class="changelog-list"></ul>
+    <div style="display:flex; gap:6px; margin-top:12px;">
+      <button type="button" id="openNewsFromChangelogBtn" class="secondary" style="flex:1; margin:0; font-size:12px; border-color:#80ffdb; color:#80ffdb;" data-i18n="changelog_open_news">📰 До новин</button>
+      <button type="button" id="closeChangelogModalBtn" style="flex:1; margin:0; background:#2a9d8f; font-size:12px;" data-i18n="changelog_btn_ok">✅ Зрозуміло!</button>
+    </div>
+  </div>
+</div>
+
+<div id="phoneToastShade" class="phone-toast-shade" style="display:none;"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/icons.js"></script>
+<script src="/i18n.js"></script>
+<script src="/minigames.js"></script>
+<script src="/role-balance.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

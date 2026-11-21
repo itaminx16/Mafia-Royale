@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+    <defs>
+      <linearGradient id="grad_1" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#3d0c11"/>
+        <stop offset="100%" stop-color="#120406"/>
+      </linearGradient>
+      <filter id="glow_1">
+        <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#e63946" flood-opacity="0.4"/>
+      </filter>
+    </defs>
+    <circle cx="60" cy="60" r="54" fill="url(#grad_1)" stroke="#e63946" stroke-width="3" filter="url(#glow_1)"/>
+    <circle cx="60" cy="60" r="46" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1.5" stroke-dasharray="4 3"/>
+    <text x="60" y="68" font-size="44" text-anchor="middle" dominant-baseline="middle" font-family="'Segoe UI Emoji', AppleColorEmoji, sans-serif">👑</text>
+  </svg>
