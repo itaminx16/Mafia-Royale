@@ -90,6 +90,8 @@ function defaultProfile(username = 'Новачок', password = '') {
       recentResults: [], // останні 6 боїв ('W'|'L'|'D') для чесного MMR бота
     },
     settings: { sound: true, music: true, fullscreen: false },
+    lastSeenVersion: null,
+    seenNewsIds: [],
   };
 }
 
@@ -115,6 +117,8 @@ function normalizeProfile(d, fallbackName = 'Гравець') {
   d.storyDone = d.storyDone || {};
   d.storyState = d.storyState || {};
   d.storyBranch = d.storyBranch || 'mafia';
+  d.lastSeenVersion = typeof d.lastSeenVersion === 'string' ? d.lastSeenVersion : null;
+  d.seenNewsIds = Array.isArray(d.seenNewsIds) ? d.seenNewsIds : [];
 
   if (typeof d.trophies !== 'number') d.trophies = 0;
   if (typeof d.maxTrophies !== 'number' || d.maxTrophies < d.trophies) d.maxTrophies = d.trophies;
@@ -275,6 +279,25 @@ export const Save = {
     this.accounts[this.currentKey] = fresh;
     this.data = fresh;
     this.save();
+  },
+
+  hasUnreadUpdate(ver) {
+    if (!this.data) return false;
+    return this.data.lastSeenVersion !== ver;
+  },
+
+  markVersionSeen(ver) {
+    if (!this.data) return;
+    this.data.lastSeenVersion = ver;
+    this.save();
+  },
+
+  markNewsSeen(newsId) {
+    if (!this.data) return;
+    if (!this.data.seenNewsIds.includes(newsId)) {
+      this.data.seenNewsIds.push(newsId);
+      this.save();
+    }
   },
 
   level(id) { return (this.data.cards[id] && this.data.cards[id].level) || 1; },

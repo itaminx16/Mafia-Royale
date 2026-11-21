@@ -6,7 +6,7 @@
 import {
   VERSION, CARDS, CARD_MAP, TOWERS, TOWER_MAP, ARENAS, CHESTS, RARITY,
   ECONOMY, LEVEL_MAX, CARD_CAPACITY_TOTAL, CARD_CAPACITY_PER_ARENA,
-  STORY_CAMPAIGNS, STORY_CHAPTERS, GAME_MODES, statAtLevel, arenaForTrophies,
+  STORY_CAMPAIGNS, STORY_CHAPTERS, GAME_MODES, GAME_NEWS, statAtLevel, arenaForTrophies,
 } from './data.js';
 import { Save, rollChestType, generateChest, applyChest } from './storage.js';
 import { Audio } from './audio.js';
@@ -125,6 +125,8 @@ class AppUI {
       topRank: $('top-rank'),
       topTrophies: $('top-trophies'),
       topGold: $('top-gold'),
+      btnNews: $('btn-news'),
+      newsBadgeDot: $('news-badge-dot'),
       btnSettings: $('btn-settings'),
       // Вкладки
       tabs: document.querySelectorAll('.nav-tab'),
@@ -189,6 +191,10 @@ class AppUI {
       settingsModalBody: $('settings-modal-body'),
       adminModal: $('admin-modal'),
       adminModalBody: $('admin-modal-body'),
+      whatsNewModal: $('whats-new-modal'),
+      whatsNewModalBody: $('whats-new-modal-body'),
+      newsModal: $('news-modal'),
+      newsModalBody: $('news-modal-body'),
     };
   }
 
@@ -325,6 +331,11 @@ class AppUI {
     Audio.setMusic(Save.data.settings.music, 68);
     if (Save.data.settings.music) Audio.startMusic(68);
     this.refreshAll();
+
+    // Автоматично відкриваємо вікно «Що нового» після оновлення версії
+    if (Save.hasUnreadUpdate(VERSION)) {
+      setTimeout(() => this.openWhatsNewModal(VERSION), 450);
+    }
   }
 
   // ==================================================================
@@ -348,6 +359,13 @@ class AppUI {
       Audio.play('click');
       this.openSettingsModal();
     });
+
+    if (this.el.btnNews) {
+      this.el.btnNews.addEventListener('click', () => {
+        Audio.play('click');
+        this.openNewsModal();
+      });
+    }
 
     this.el.heroArenaCard.addEventListener('click', () => {
       Audio.play('click');
@@ -383,6 +401,7 @@ class AppUI {
     const closable = [
       this.el.cardModal, this.el.arenaModal, this.el.modesModal,
       this.el.profileModal, this.el.settingsModal, this.el.adminModal,
+      this.el.whatsNewModal, this.el.newsModal,
     ];
     for (const m of closable) {
       m.addEventListener('click', e => {
@@ -419,6 +438,11 @@ class AppUI {
     this.el.btnOpenProfile.classList.toggle('is-admin', d.isAdmin);
     this.el.topTrophies.textContent = d.trophies;
     this.el.topGold.textContent = d.gold;
+
+    if (this.el.newsBadgeDot) {
+      const hasUnread = Save.hasUnreadUpdate(VERSION);
+      this.el.newsBadgeDot.classList.toggle('hidden', !hasUnread);
+    }
   }
 
   // ==================================================================
@@ -769,6 +793,10 @@ class AppUI {
         <span>📦 Версія гри: <strong>v${VERSION}</strong></span>
         <button id="set-check-update" class="toggle-btn" style="background:#2563eb">🔄 Перевірити</button>
       </div>
+      <div class="settings-row">
+        <span>📰 Що нового та новини міста</span>
+        <button id="set-open-news" class="toggle-btn" style="background:#059669">Читати</button>
+      </div>
       <div class="modal-actions" style="margin-top:12px">
         ${d.isAdmin ? `<button id="btn-open-admin" class="btn-gold">👑 Адмін-панель (Itaminx)</button>` : ''}
         <button id="btn-logout" class="btn-secondary">🚪 Вийти з акаунту (${d.username})</button>
@@ -806,6 +834,15 @@ class AppUI {
       this.el.settingsModal.classList.add('hidden');
       this.checkForUpdates(true);
     });
+
+    const openNewsBtn = document.getElementById('set-open-news');
+    if (openNewsBtn) {
+      openNewsBtn.addEventListener('click', () => {
+        Audio.play('click');
+        this.el.settingsModal.classList.add('hidden');
+        this.openNewsModal();
+      });
+    }
 
     const admBtn = document.getElementById('btn-open-admin');
     if (admBtn) {
@@ -927,7 +964,9 @@ class AppUI {
       if (!info || !info.version) return;
 
       if (info.version === VERSION) {
-        if (manual) alert(`У вас уже найновіша версія Mafia Royale (v${VERSION})!`);
+        if (manual) {
+          this.openWhatsNewModal(VERSION);
+        }
         return;
       }
 
@@ -984,6 +1023,101 @@ class AppUI {
       this._updating = false;
       if (manual) alert('Помилка перевірки оновлень.');
     }
+  }
+
+  // ==================================================================
+  //  ВІКНО «ЩО НОВОГО В ОНОВЛЕННІ» ТА КРИМІНАЛЬНА ХРОНІКА (НОВИНИ)
+  // ==================================================================
+  openWhatsNewModal(version = VERSION) {
+    const news = GAME_NEWS.find(n => n.version === version) || GAME_NEWS[0];
+    this.el.whatsNewModalBody.innerHTML = `
+      <div class="modal-title">
+        <div class="wn-badge-row">
+          <span class="wn-badge">${news.badge || 'ОНОВЛЕННЯ'}</span>
+          <span class="wn-version-tag">Версія v${news.version}</span>
+          <span class="wn-date">${news.date}</span>
+        </div>
+        <button class="btn-ghost-sm" data-close-modal>✕</button>
+      </div>
+      <div class="wn-hero">
+        <div class="wn-hero-icon">${news.bannerEmoji || '🗞️'}</div>
+        <h2 class="wn-hero-title">${news.title}</h2>
+        <p class="wn-hero-summary">${news.summary}</p>
+      </div>
+      <div class="wn-changes-box">
+        <div class="wn-changes-header">⚡ Що було змінено та доопрацьовано:</div>
+        <ul class="wn-changes-list">
+          ${news.changes.map(ch => `<li><span class="wn-check">✔</span><span class="wn-text">${ch}</span></li>`).join('')}
+        </ul>
+      </div>
+      <div class="modal-actions wn-actions">
+        <button id="btn-wn-confirm" class="btn-battle-big wn-confirm-btn">
+          <span class="btn-battle-main">⚔️ ЗРОЗУМІЛО — ДО ГРИ!</span>
+        </button>
+        <button id="btn-wn-read-all" class="btn-secondary">
+          📰 Всі випуски новин міста
+        </button>
+      </div>
+    `;
+    this.el.whatsNewModal.classList.remove('hidden');
+    Audio.play('crown');
+
+    const confirmBtn = document.getElementById('btn-wn-confirm');
+    if (confirmBtn) {
+      confirmBtn.addEventListener('click', () => {
+        Audio.play('select');
+        Save.markVersionSeen(VERSION);
+        this.el.whatsNewModal.classList.add('hidden');
+        this.renderTopBar();
+      });
+    }
+
+    const readAllBtn = document.getElementById('btn-wn-read-all');
+    if (readAllBtn) {
+      readAllBtn.addEventListener('click', () => {
+        Audio.play('click');
+        Save.markVersionSeen(VERSION);
+        this.el.whatsNewModal.classList.add('hidden');
+        this.openNewsModal();
+      });
+    }
+  }
+
+  openNewsModal() {
+    this.el.newsModalBody.innerHTML = `
+      <div class="modal-title">
+        <h3>📰 Кримінальна хроніка та новини</h3>
+        <button class="btn-ghost-sm" data-close-modal>✕</button>
+      </div>
+      <p class="modal-desc">Оперативні зведення, патч-ноути оновлень та плани розширення Mafia Royale.</p>
+
+      <div class="news-list-container">
+        ${GAME_NEWS.map(n => `
+          <article class="news-card ${n.version === VERSION ? 'current-release' : ''}">
+            <div class="news-card-header">
+              <span class="news-badge" style="background:${n.badgeColor || '#3B82F6'}">${n.badge}</span>
+              <span class="news-tag">Версія v${n.version}</span>
+              <span class="news-date">${n.date}</span>
+            </div>
+            <h4 class="news-card-title">${n.bannerEmoji || '🗞️'} ${n.title}</h4>
+            <p class="news-card-summary">${n.summary}</p>
+            <div class="news-card-details">
+              <div class="news-details-title">⚡ Що нового:</div>
+              <ul class="news-details-list">
+                ${n.changes.map(c => `<li>${c}</li>`).join('')}
+              </ul>
+            </div>
+          </article>
+        `).join('')}
+      </div>
+
+      <div class="modal-actions" style="margin-top:14px">
+        <button class="btn-primary" data-close-modal>Зрозуміло</button>
+      </div>
+    `;
+    this.el.newsModal.classList.remove('hidden');
+    Save.markVersionSeen(VERSION);
+    this.renderTopBar();
   }
 
   // ==================================================================
