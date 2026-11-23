@@ -125,8 +125,20 @@
             <button id="btn-cancel-swap" class="btn-ghost-sm">Скасувати</button>
           </div>
 
+          <div class="deck-management-bar">
+            <div class="deck-slots-switcher">
+              <span class="dss-label">Колода:</span>
+              <button class="btn-deck-slot" data-deck-slot="0">1</button>
+              <button class="btn-deck-slot" data-deck-slot="1">2</button>
+              <button class="btn-deck-slot" data-deck-slot="2">3</button>
+              <button class="btn-deck-slot" data-deck-slot="3">4</button>
+              <button class="btn-deck-slot" data-deck-slot="4">5</button>
+            </div>
+            <button id="btn-clear-deck" class="btn-clear-deck" title="Очистити карти в цій колоді">🗑 Очистити</button>
+          </div>
+
           <div class="section-head">
-            <h2>Бойова колода (8 карт)</h2>
+            <h2>Бойова колода (<span id="deck-card-count">8</span> / 8)</h2>
             <span class="avg-pill">Середня: <strong id="deck-avg-cost">3.5$</strong></span>
           </div>
           <div id="deck-slots" class="cards-grid deck-grid"></div>

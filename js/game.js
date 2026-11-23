@@ -232,7 +232,13 @@ export class Game {
       lifetime: def.lifetime, shot: def.shot || null,
     });
     e.decay = e.maxHp / def.lifetime;
-    if (def.special === 'SPAWN_THUG_EVERY_7S') e.spawnT = def.spawnEvery;
+    if (def.special === 'SPAWN_THUG_EVERY_7S') {
+      e.spawnT = def.spawnEvery;
+      // Відразу випускаємо першу хвилю з 4 бійців шпани при розміщенні будівлі
+      const dy = side === 'P' ? -1.3 : 1.3;
+      this._spawnUnits(side, CARD_MAP[def.spawnCard], level, x, y + dy, { count: def.spawnCount || 4, deployT: 0.3, silent: true });
+      this.emit('spawnerPop', { x, y });
+    }
     this.entities.push(e);
     this.emit('deploy', { side, x, y, cardId: def.id });
   }
@@ -380,6 +386,12 @@ export class Game {
     if (a.targets === 'NONE') return false;
     if (a.targets === 'BUILDINGS_ONLY') return t.isBuilding;
     if (a.targets === 'GROUND') return !t.flying;
+    // Башні не можуть стріляти за свою половину арени (річка/середина Y = 16)
+    if (a.kind === 'tower') {
+      const midY = (ARENA.riverY0 + ARENA.riverY1) / 2; // 16
+      if (a.side === 'P' && t.y < midY) return false;
+      if (a.side === 'E' && t.y > midY) return false;
+    }
     return true;
   }
 

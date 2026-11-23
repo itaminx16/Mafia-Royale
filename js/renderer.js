@@ -519,27 +519,68 @@ export class Renderer {
       [1.2, 14.3], [5.8, 14.3], [12.2, 14.3], [16.8, 14.3],
       [1.2, 17.7], [5.8, 17.7], [12.2, 17.7], [16.8, 17.7],
     ];
-    const glowColor = ar.id === 'arena_3' ? 'rgba(192,132,252,0.18)'
-      : ar.id === 'arena_4' ? 'rgba(250,204,21,0.18)'
-      : 'rgba(251,191,36,0.15)';
+    let glowColor = 'rgba(251,191,36,0.15)';
+    if (ar.weather === 'neon_red' || ar.weather === 'velvet_red') glowColor = 'rgba(239,68,68,0.22)';
+    else if (ar.weather === 'neon_blue' || ar.weather === 'wind_clouds') glowColor = 'rgba(56,189,248,0.22)';
+    else if (ar.weather === 'green_glow') glowColor = 'rgba(34,197,94,0.22)';
+    else if (ar.weather === 'casino_sparkle' || ar.weather === 'gold_dust' || ar.weather === 'gold_vault') glowColor = 'rgba(250,204,21,0.24)';
+    else if (ar.weather === 'conclave_legendary') glowColor = 'rgba(168,85,247,0.25)';
+
     for (const [lx, ly] of lamps) {
       const x = lx * T, y = ly * T;
-      const g = ctx.createRadialGradient(x, y, 1, x, y, T * 1.4);
+      const g = ctx.createRadialGradient(x, y, 1, x, y, T * 1.5);
       g.addColorStop(0, glowColor); g.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = g;
-      ctx.beginPath(); ctx.arc(x, y, T * 1.4, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#1f2937'; ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#fde68a'; ctx.beginPath(); ctx.arc(x, y, 1.6, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x, y, T * 1.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#1f2937'; ctx.beginPath(); ctx.arc(x, y, 3.2, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fde68a'; ctx.beginPath(); ctx.arc(x, y, 1.8, 0, Math.PI * 2); ctx.fill();
     }
+
+    // Поліцейські мигалки для арени 16 (SWAT)
+    if (ar.weather === 'police_flashing') {
+      const flashRed = Math.sin(time * 12) > 0;
+      ctx.fillStyle = flashRed ? 'rgba(239, 68, 68, 0.08)' : 'rgba(59, 130, 246, 0.08)';
+      ctx.fillRect(0, 0, ARENA.W * T, ARENA.H * T);
+    }
+
+    // Дощ для арен Доків (арени 2, 12, 19)
+    if (ar.weather === 'rain' || ar.weather === 'heavy_rain') {
+      ctx.strokeStyle = 'rgba(186, 230, 253, 0.28)';
+      ctx.lineWidth = 1.2;
+      const count = ar.weather === 'heavy_rain' ? 36 : 20;
+      for (let i = 0; i < count; i++) {
+        const rx = ((i * 37 + time * 180) % (ARENA.W * T));
+        const ry = ((i * 59 + time * 380) % (ARENA.H * T));
+        ctx.beginPath();
+        ctx.moveTo(rx, ry);
+        ctx.lineTo(rx - 3, ry + 10);
+        ctx.stroke();
+      }
+    }
+
+    // Золоті іскри для казино, банку та конклаву
+    if (ar.weather === 'casino_sparkle' || ar.weather === 'gold_dust' || ar.weather === 'conclave_legendary') {
+      const isConclave = ar.weather === 'conclave_legendary';
+      for (let i = 0; i < 16; i++) {
+        const sx = ((i * 53 + Math.sin(time + i) * 20) % (ARENA.W * T));
+        const sy = (ARENA.H * T) - ((i * 71 + time * 40) % (ARENA.H * T));
+        const sz = 1.2 + (i % 3) * 0.7;
+        ctx.fillStyle = isConclave ? (i % 2 === 0 ? '#fde047' : '#c084fc') : '#fde047';
+        ctx.beginPath();
+        ctx.arc(sx, sy, sz, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
     const barrels = [[0.7, 9.5], [17.3, 9.5], [0.7, 22.5], [17.3, 22.5]];
     const flick = 0.85 + Math.sin(time * 11) * 0.15;
     for (const [bx, by] of barrels) {
       const x = bx * T, y = by * T;
       ctx.fillStyle = '#44403c';
-      ctx.beginPath(); ctx.arc(x, y, T * 0.32, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x, y, T * 0.35, 0, Math.PI * 2); ctx.fill();
       ctx.strokeStyle = '#111'; ctx.lineWidth = 1.5; ctx.stroke();
       ctx.fillStyle = '#f97316';
-      ctx.beginPath(); ctx.arc(x, y - 2, T * 0.2 * flick, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x, y - 2, T * 0.22 * flick, 0, Math.PI * 2); ctx.fill();
     }
   }
 
@@ -831,7 +872,8 @@ export class Renderer {
   _drawUnit25D(ctx, e, game) {
     const p = this.toScreen(e.x, e.y);
     const T = this.tile;
-    const r = Math.max(9, e.r * T);
+    // Збільшені фігурки юнітів (+55% масштабу, щоб їх було чудово видно на карті)
+    const r = Math.max(14, e.r * T * 1.55);
     const look = e.look || { type: 'human', body: '#4b5563', skin: '#e0b48f' };
     const flash = e.flashT > 0;
 

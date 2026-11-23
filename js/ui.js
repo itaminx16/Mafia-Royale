@@ -16,11 +16,15 @@ import { Bot, makeBotDeck, computeBotMatchup } from './ai.js';
 import { Renderer } from './renderer.js';
 
 const RANK_TITLES = [
-  { min: 0,   name: 'Вуличний новачок' },
-  { min: 100, name: 'Солдат сім\'ї' },
-  { min: 250, name: 'Капореджиме' },
-  { min: 450, name: 'Консильєрі' },
-  { min: 700, name: 'Хрещений батько' },
+  { min: 0,    name: 'Вуличний новачок' },
+  { min: 250,  name: 'Боєць кварталу' },
+  { min: 700,  name: 'Солдат сім\'ї' },
+  { min: 1200, name: 'Сержант мафії' },
+  { min: 1700, name: 'Капореджиме' },
+  { min: 2450, name: 'Молодший бос' },
+  { min: 3200, name: 'Консильєрі' },
+  { min: 4000, name: 'Хрещений батько' },
+  { min: 4900, name: 'Глава Конклаву' },
 ];
 function rankForTrophies(t) {
   let r = RANK_TITLES[0].name;
@@ -384,6 +388,12 @@ class AppUI {
 
     this.el.btnStartBattle.addEventListener('click', () => {
       Audio.unlock();
+      if (Save.data.deck.length < 8) {
+        Audio.play('error');
+        alert(`У вашій колоді має бути рівно 8 карт! Зараз обрано: ${Save.data.deck.length}/8.\nПерейдіть у розділ «Колода» та додайте карти.`);
+        this.switchTab('deck');
+        return;
+      }
       Audio.play('select');
       if (Save.data.gameMode === 'story') {
         this.openModesModal(true);
@@ -476,6 +486,7 @@ class AppUI {
       </div>
       <div class="hero-arena-title">${ar.name}</div>
       <div class="hero-arena-spec">✨ ${ar.specialty} • 🎵 ${ar.bpm} BPM</div>
+      <div class="hero-arena-feature">⚡ <strong>${ar.featureName}:</strong> ${ar.featureDesc}</div>
       <div class="hero-arena-progress">
         <div class="hero-prog-bar"><div class="hero-prog-fill" style="width:${progPct}%"></div></div>
         <div class="hero-prog-label">
@@ -528,7 +539,7 @@ class AppUI {
 
     this.el.arenaModalBody.innerHTML = `
       <div class="modal-title">
-        <h3>🗺️ Арени міста (5 ліг)</h3>
+        <h3>🗺️ Арени міста (${ARENAS.length} Арен)</h3>
         <button class="btn-ghost-sm" data-close-modal>✕</button>
       </div>
       <div class="settings-row">
@@ -557,6 +568,7 @@ class AppUI {
                   <span>🎵 ${ar.bpm} BPM</span>
                   <span>🃏 ${arenaCards.length} / ${CARD_CAPACITY_PER_ARENA} карт</span>
                 </div>
+                <div class="arena-feature-pill">⚡ <strong>${ar.featureName}:</strong> ${ar.featureDesc}</div>
                 <p class="arena-desc">${ar.specialty}</p>
                 <div class="arena-unlocks">Особливі юніти: ${names || 'Скоро'}</div>
               </div>
@@ -1156,6 +1168,30 @@ class AppUI {
       });
     });
 
+    // Перемикач 5 слотів колод
+    document.querySelectorAll('.btn-deck-slot').forEach(btn => {
+      const s = +btn.dataset.deckSlot;
+      btn.classList.toggle('active', s === d.deckSlot);
+      btn.onclick = () => {
+        Audio.unlock();
+        Audio.play('click');
+        Save.selectDeckSlot(s);
+        this.swapCardId = null;
+        this.refreshAll();
+      };
+    });
+
+    const clearBtn = document.getElementById('btn-clear-deck');
+    if (clearBtn) {
+      clearBtn.onclick = () => {
+        Audio.unlock();
+        Audio.play('click');
+        Save.clearCurrentDeck();
+        this.swapCardId = null;
+        this.refreshAll();
+      };
+    }
+
     if (this.swapCardId) {
       const c = CARD_MAP[this.swapCardId];
       this.el.swapBanner.classList.remove('hidden');
@@ -1164,11 +1200,25 @@ class AppUI {
       this.el.swapBanner.classList.add('hidden');
     }
 
-    const avg = (d.deck.reduce((s, id) => s + CARD_MAP[id].cost, 0) / d.deck.length).toFixed(1);
+    const avg = d.deck.length > 0
+      ? (d.deck.reduce((s, id) => s + (CARD_MAP[id] ? CARD_MAP[id].cost : 0), 0) / d.deck.length).toFixed(1)
+      : '0.0';
     this.el.avgCost.textContent = `${avg}$`;
+    const countEl = document.getElementById('deck-card-count');
+    if (countEl) countEl.textContent = d.deck.length;
     this.el.collectionCount.textContent = CARDS.length;
 
-    this.el.deckSlots.innerHTML = d.deck.map((id, idx) => this._renderCardTile(id, { inDeck: true, slotIdx: idx })).join('');
+    const deckTiles = d.deck.map((id, idx) => this._renderCardTile(id, { inDeck: true, slotIdx: idx }));
+    for (let i = d.deck.length; i < 8; i++) {
+      deckTiles.push(`
+        <div class="card-tile empty-slot" data-empty-slot="${i}">
+          <div class="empty-slot-plus">＋</div>
+          <div class="empty-slot-text">Слот ${i + 1}</div>
+          <div class="empty-slot-sub">Вільне місце</div>
+        </div>
+      `);
+    }
+    this.el.deckSlots.innerHTML = deckTiles.join('');
     const rest = CARDS.filter(c => !d.deck.includes(c.id));
     this.el.collectionGrid.innerHTML = rest.map(c => this._renderCardTile(c.id, { inDeck: false })).join('');
 
@@ -1289,7 +1339,15 @@ class AppUI {
             ⬆ Покращити до рів. ${up.next} (${st.count}/${up.cards} карт • ${up.gold} 🪙)
           </button>
         ` : `<div class="max-level-badge">✨ Максимальний 6 рівень досягнуто!</div>`}
-        ${!inDeck ? `<button class="btn-secondary" id="modal-btn-use">🃏 Взяти в колоду</button>` : ''}
+        ${!inDeck ? `
+          <button class="btn-secondary" id="modal-btn-use">
+            🃏 ${Save.data.deck.length < 8 ? 'Взяти в колоду (+)' : 'Замінити карту в колоді'}
+          </button>
+        ` : `
+          <button class="btn-danger" id="modal-btn-remove">
+            ❌ Прибрати з цієї колоди
+          </button>
+        `}
         <button class="btn-ghost" data-close-modal>Закрити</button>
       </div>
     `;
@@ -1301,9 +1359,27 @@ class AppUI {
     const useBtn = document.getElementById('modal-btn-use');
     if (useBtn) {
       useBtn.addEventListener('click', () => {
-        this.swapCardId = id;
+        if (Save.data.deck.length < 8) {
+          Save.addCardToDeck(id);
+          Audio.unlock();
+          Audio.play('select');
+          this.el.cardModal.classList.add('hidden');
+          this.refreshAll();
+        } else {
+          this.swapCardId = id;
+          this.el.cardModal.classList.add('hidden');
+          this.switchTab('deck');
+        }
+      });
+    }
+    const remBtn = document.getElementById('modal-btn-remove');
+    if (remBtn) {
+      remBtn.addEventListener('click', () => {
+        Save.removeCardFromDeck(id);
+        Audio.unlock();
+        Audio.play('click');
         this.el.cardModal.classList.add('hidden');
-        this.switchTab('deck');
+        this.refreshAll();
       });
     }
   }

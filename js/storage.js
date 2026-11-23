@@ -56,6 +56,13 @@ function defaultProfile(username = 'Новачок', password = '') {
   const cards = {};
   for (const c of CARDS) cards[c.id] = { level: 1, count: 0 };
   const isAdmin = username.trim().toLowerCase() === ADMIN_USERNAME;
+  const decks = [
+    [...DEFAULT_DECK],
+    [...DEFAULT_DECK],
+    [...DEFAULT_DECK],
+    [...DEFAULT_DECK],
+    [...DEFAULT_DECK],
+  ];
   return {
     v: 2,
     username: username.trim(),
@@ -66,7 +73,9 @@ function defaultProfile(username = 'Новачок', password = '') {
     maxTrophies: 0,
     gold: 500,
     cards,
-    deck: [...DEFAULT_DECK],
+    deckSlot: 0,
+    decks,
+    deck: [...decks[0]],
     tower: DEFAULT_TOWER,
     selectedArena: 'arena_1',
     autoArena: true, // автоматично піднімати арену за кубками
@@ -104,10 +113,26 @@ function normalizeProfile(d, fallbackName = 'Гравець') {
   d.cards = d.cards || {};
   for (const c of CARDS) if (!d.cards[c.id]) d.cards[c.id] = { level: 1, count: 0 };
 
-  d.deck = (Array.isArray(d.deck) ? d.deck : def.deck).filter(id => CARD_MAP[id]);
-  for (const id of def.deck) { if (d.deck.length >= 8) break; if (!d.deck.includes(id)) d.deck.push(id); }
-  for (const c of CARDS) { if (d.deck.length >= 8) break; if (!d.deck.includes(c.id)) d.deck.push(c.id); }
-  d.deck = d.deck.slice(0, 8);
+  // Підтримка 5 збережених слотів колод
+  if (!Array.isArray(d.decks) || d.decks.length !== 5) {
+    const baseDeck = Array.isArray(d.deck) && d.deck.length > 0 ? d.deck : [...DEFAULT_DECK];
+    d.decks = [
+      [...baseDeck],
+      [...DEFAULT_DECK],
+      [...DEFAULT_DECK],
+      [...DEFAULT_DECK],
+      [...DEFAULT_DECK],
+    ];
+  }
+  if (typeof d.deckSlot !== 'number' || d.deckSlot < 0 || d.deckSlot > 4) {
+    d.deckSlot = 0;
+  }
+  for (let i = 0; i < 5; i++) {
+    if (!Array.isArray(d.decks[i])) d.decks[i] = [...DEFAULT_DECK];
+    d.decks[i] = d.decks[i].filter(id => CARD_MAP[id]).slice(0, 8);
+  }
+  // Активна колода d.deck завжди прив'язана до обраного слота
+  d.deck = d.decks[d.deckSlot];
 
   if (!TOWER_MAP[d.tower]) d.tower = def.tower;
   d.stats = Object.assign(def.stats, d.stats || {});
@@ -298,6 +323,47 @@ export const Save = {
       this.data.seenNewsIds.push(newsId);
       this.save();
     }
+  },
+
+  selectDeckSlot(slotIdx) {
+    if (!this.data || slotIdx < 0 || slotIdx > 4) return;
+    this.data.deckSlot = slotIdx;
+    this.data.deck = this.data.decks[slotIdx] || [];
+    this.save();
+  },
+
+  clearCurrentDeck() {
+    if (!this.data) return;
+    this.data.deck = [];
+    this.data.decks[this.data.deckSlot] = [];
+    this.save();
+  },
+
+  addCardToDeck(cardId) {
+    if (!this.data || !CARD_MAP[cardId]) return false;
+    if (this.data.deck.includes(cardId)) return false;
+    if (this.data.deck.length >= 8) return false;
+    this.data.deck.push(cardId);
+    this.data.decks[this.data.deckSlot] = [...this.data.deck];
+    this.save();
+    return true;
+  },
+
+  removeCardFromDeck(cardId) {
+    if (!this.data) return false;
+    const idx = this.data.deck.indexOf(cardId);
+    if (idx === -1) return false;
+    this.data.deck.splice(idx, 1);
+    this.data.decks[this.data.deckSlot] = [...this.data.deck];
+    this.save();
+    return true;
+  },
+
+  setDeckCard(slotIdx, cardId) {
+    if (!this.data || !CARD_MAP[cardId]) return;
+    this.data.deck[slotIdx] = cardId;
+    this.data.decks[this.data.deckSlot] = [...this.data.deck];
+    this.save();
   },
 
   level(id) { return (this.data.cards[id] && this.data.cards[id].level) || 1; },
