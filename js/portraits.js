@@ -220,6 +220,75 @@ const ART = {
     <circle cx="50" cy="48" r="18" fill="#dc2626" ${O}/>
     <text x="50" y="55" font-family="Impact,Arial Black,sans-serif" font-size="16" text-anchor="middle" fill="#fde047">+40%</text>`,
 
+  // ---- 10 нових карт (v0.5.0) ----
+  spell_ricochet: () => `
+    <path d="M15 75 L38 35 L62 60 L85 22" fill="none" stroke="#facc15" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="85" cy="22" r="6" fill="#fde047" ${O}/>
+    <circle cx="38" cy="35" r="4" fill="#f59e0b"/>
+    <circle cx="62" cy="60" r="4" fill="#f59e0b"/>
+    <path d="M85 10 L85 34 M73 22 L97 22" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>`,
+  bldg_police_spikes: () => `
+    <rect x="8" y="52" width="84" height="28" rx="3" fill="#1f2937" ${O}/>
+    <path d="M14 52 L20 32 L26 52 M30 52 L36 32 L42 52 M46 52 L52 32 L58 52 M62 52 L68 32 L74 52 M78 52 L82 34 L86 52" fill="#9ca3af" stroke="#111" stroke-width="2"/>
+    <rect x="18" y="20" width="10" height="14" rx="2" fill="#ef4444" ${O}/>
+    <rect x="28" y="20" width="10" height="14" rx="2" fill="#3b82f6" ${O}/>`,
+  spell_manhole_ambush: () => `
+    <ellipse cx="50" cy="68" rx="36" ry="16" fill="#09090b" ${O}/>
+    <ellipse cx="50" cy="40" rx="32" ry="13" fill="#3f3f46" stroke="#18181b" stroke-width="3" transform="rotate(-15 50 40)"/>
+    <path d="M30 68 Q50 55 70 68" stroke="#a1a1aa" stroke-width="2" fill="none"/>
+    <rect x="36" y="56" width="28" height="6" fill="#71717a" rx="1"/>
+    <circle cx="44" cy="62" r="3.5" fill="#ef4444"/><circle cx="56" cy="62" r="3.5" fill="#ef4444"/>
+    <text x="50" y="30" font-family="Impact,Arial Black,sans-serif" font-size="14" text-anchor="middle" fill="#facc15">BANG!</text>`,
+  bldg_counterfeit_press: () => `
+    <rect x="16" y="38" width="68" height="48" rx="4" fill="#1e293b" ${O}/>
+    <circle cx="34" cy="54" r="13" fill="#475569" stroke="#111" stroke-width="2"/>
+    <circle cx="66" cy="54" r="13" fill="#475569" stroke="#111" stroke-width="2"/>
+    <rect x="24" y="50" width="52" height="8" fill="#10b981" ${O}/>
+    <g transform="rotate(-12 60 28)"><rect x="44" y="16" width="30" height="18" rx="2" fill="#22c55e" stroke="#14532d" stroke-width="1.5"/><text x="59" y="29" font-family="Georgia,serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#052e16">$</text></g>
+    <rect x="20" y="70" width="60" height="12" fill="#ef4444" rx="2"/><text x="50" y="79" font-family="Impact,sans-serif" font-size="10" text-anchor="middle" fill="#fff">FAKE</text>`,
+  unit_contraband_blimp: () => `
+    <ellipse cx="50" cy="46" rx="42" ry="24" fill="#292524" ${O}/>
+    <path d="M12 46 Q50 30 88 46 Q50 62 12 46 Z" fill="#44403c"/>
+    <path d="M8 38 L2 30 L6 46 L2 62 L8 54 Z" fill="#1c1917" ${O}/>
+    <rect x="36" y="70" width="28" height="12" rx="3" fill="#f59e0b" ${O}/>
+    <circle cx="50" cy="46" r="10" fill="#dc2626" ${O}/>
+    <text x="50" y="50" font-family="Impact,sans-serif" font-size="11" text-anchor="middle" fill="#fff">M</text>`,
+  unit_aa_truck: () => `
+    <rect x="12" y="52" width="76" height="26" rx="4" fill="#334155" ${O}/>
+    <rect x="14" y="40" width="28" height="16" rx="3" fill="#1e293b" ${O}/>
+    <circle cx="28" cy="78" r="9" fill="#111" ${O}/><circle cx="72" cy="78" r="9" fill="#111" ${O}/>
+    <path d="M54 52 L78 22 M58 52 L82 22" stroke="#0f172a" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="56" cy="52" r="7" fill="#64748b" ${O}/>
+    <circle cx="83" cy="20" r="4" fill="#f59e0b"/>`,
+  unit_toxin_chemist: () => `
+    ${shoulders('#1e3a5f', '<rect x="38" y="70" width="24" height="22" fill="#3f6212" stroke="#111" stroke-width="2"/>')}
+    <circle cx="50" cy="45" r="18" fill="#14532d" ${O}/>
+    <circle cx="42" cy="43" r="6" fill="#84cc16" stroke="#111" stroke-width="1.5"/><circle cx="58" cy="43" r="6" fill="#84cc16" stroke="#111" stroke-width="1.5"/>
+    <path d="M46 54 L54 54 L50 62 Z" fill="#365314" ${O}/>
+    <path d="M72 65 L84 82 L70 82 Z" fill="#84cc16" stroke="#111" stroke-width="2"/>
+    <circle cx="77" cy="72" r="2" fill="#fff"/>`,
+  unit_police_patrol: () => `
+    ${shoulders('#1e3a8a', '<path d="M44 70 L50 82 L56 70" fill="#f8fafc" stroke="#111" stroke-width="1.5"/><rect x="48" y="74" width="4" height="16" fill="#172554"/>')}
+    ${face(50, 48, 1, '#d2a07a')}${eyes(50, 48, 1)}
+    <path d="M26 36 Q50 26 74 36 L70 42 Q50 36 30 42 Z" fill="#172554" ${O}/>
+    <path d="M30 36 Q50 18 70 36 Z" fill="#1e3a8a" ${O}/>
+    <path d="M50 28 L53 33 L50 36 L47 33 Z" fill="#facc15" stroke="#111" stroke-width="1"/>
+    <line x1="78" y1="55" x2="88" y2="80" stroke="#111" stroke-width="5" stroke-linecap="round"/>`,
+  unit_police_chief: () => `
+    ${shoulders('#0f172a', '<path d="M42 68 L50 84 L58 68" fill="#f8fafc" stroke="#111" stroke-width="2"/><path d="M48 72 L52 72 L53 90 L47 90 Z" fill="#b91c1c"/>')}
+    ${face(50, 46, 1.15, '#d2a07a')}${eyes(50, 46, 1.15)}
+    <path d="M22 36 Q50 24 78 36 L74 42 Q50 36 26 42 Z" fill="#0f172a" ${O}/>
+    <path d="M26 36 Q50 14 74 36 Z" fill="#1e293b" ${O}/>
+    <circle cx="50" cy="27" r="5" fill="#facc15" stroke="#111" stroke-width="1.5"/>
+    <path d="M30 72 L36 78 L30 84 L24 78 Z" fill="#facc15" stroke="#111" stroke-width="1.5"/>
+    <path d="M72 74 L86 70 L86 78 L78 80 Z" fill="#475569" stroke="#111" stroke-width="1.5"/>`,
+  spell_car_crash: () => `
+    <rect x="18" y="44" width="64" height="28" rx="4" fill="#b91c1c" ${O}/>
+    <path d="M26 44 L38 28 L62 28 L72 44 Z" fill="#7f1d1d" ${O}/>
+    <path d="M44 26 L56 60 M52 30 L40 56" stroke="#facc15" stroke-width="3"/>
+    <circle cx="50" cy="46" r="16" fill="none" stroke="#ef4444" stroke-width="4" stroke-dasharray="6 4"/>
+    <text x="50" y="86" font-family="Impact,Arial Black,sans-serif" font-size="14" text-anchor="middle" fill="#facc15">CRASH!</text>`,
+
   // ---- Вежі ----
   tower_mafia_mansion: () => `
     <path d="M10 46 L50 18 L90 46 Z" fill="#5b3a29" ${O}/>

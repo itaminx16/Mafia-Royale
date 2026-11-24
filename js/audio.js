@@ -172,6 +172,32 @@ class AudioEngine {
     this._tone(t, { type: 'square', f0: 900, f1: 300, dur: 0.15, gain: 0.12 });
     this._noise(t, 0.12, { type: 'highpass', freq: 3000, gain: 0.25 });
   }
+  s_ricochet(t, opt) {
+    const step = (opt && opt.step) || 0;
+    const baseF = 1800 + step * 400; // наростаючий дзвін відскоку (1800 -> 2200 -> 2600 -> 3000 Hz)
+    this._tone(t, { type: 'sine', f0: baseF, f1: baseF + 350, dur: 0.08, gain: 0.35 });
+    this._tone(t, { type: 'triangle', f0: baseF * 1.5, dur: 0.04, gain: 0.2 });
+  }
+  s_tire_pop(t) {
+    if (!this._throttle('tire_pop', 100)) return;
+    this._noise(t, 0.08, { type: 'highpass', freq: 2800, gain: 0.4 });
+    this._noise(t + 0.04, 0.25, { type: 'bandpass', freq: 1200, q: 2, gain: 0.35 });
+  }
+  s_manhole(t) {
+    if (!this._throttle('manhole', 200)) return;
+    this._tone(t, { type: 'triangle', f0: 320, f1: 90, dur: 0.25, gain: 0.6 });
+    this._noise(t, 0.3, { type: 'lowpass', freq: 700, gain: 0.5 });
+  }
+  s_flak(t) {
+    if (!this._throttle('flak', 90)) return;
+    this._tone(t, { type: 'sine', f0: 220, f1: 50, dur: 0.22, gain: 0.55 });
+    this._noise(t, 0.28, { type: 'bandpass', freq: 1000, q: 1.5, gain: 0.5 });
+  }
+  s_acid(t) {
+    if (!this._throttle('acid', 180)) return;
+    this._noise(t, 0.45, { type: 'highpass', freq: 2600, gain: 0.25, attack: 0.05 });
+    this._tone(t, { type: 'sine', f0: 420, f1: 180, dur: 0.3, gain: 0.08 });
+  }
   s_deploy(t) {
     if (!this._throttle('deploy', 60)) return;
     this._tone(t, { type: 'triangle', f0: 220, f1: 330, dur: 0.12, gain: 0.15 });

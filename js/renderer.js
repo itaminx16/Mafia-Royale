@@ -250,6 +250,75 @@ export class Renderer {
         case 'spawnerPop':
           this.rings.push({ x: ev.x, y: ev.y, r0: 0.3, r1: 1.4, t: 0, dur: 0.35, color: '#f43f5e' });
           break;
+        case 'ricochetChain':
+          Audio.play('ricochet', { step: 0 });
+          if (ev.points && ev.points.length > 1) {
+            for (let i = 0; i < ev.points.length - 1; i++) {
+              const p0 = ev.points[i], p1 = ev.points[i + 1];
+              this.tracers.push({ x0: p0.x, y0: p0.y, x1: p1.x, y1: p1.y, t: -i * 0.04, dur: 0.25, color: '#fde047', w: 3.5 });
+            }
+          }
+          break;
+        case 'ricochetHit':
+          Audio.play('ricochet', { step: ev.step });
+          this.rings.push({ x: ev.x, y: ev.y, r0: 0.1, r1: 0.8, t: 0, dur: 0.2, color: '#facc15' });
+          this.addFloatText(ev.x, ev.y - 0.5, `-${ev.dmg}`, '#fde047');
+          break;
+        case 'spikesHit':
+          Audio.play('tire_pop');
+          this._spawnExplosionFX(ev.x, ev.y, 0.8, '#94a3b8', 8);
+          this.triggerShake(JUICE.shakeSmall.amp * 0.7, 0.12);
+          break;
+        case 'manholeTrigger':
+          Audio.play('manhole');
+          this.rings.push({ x: ev.x, y: ev.y, r0: 0.2, r1: 1.4, t: 0, dur: 0.35, color: '#f59e0b' });
+          this.triggerShake(JUICE.shakeSmall.amp, 0.15);
+          for (let i = 0; i < 10; i++) {
+            const a = rnd(0, Math.PI * 2), sp = rnd(1, 2.5);
+            this.particles.push({
+              kind: 'puff', x: ev.x, y: ev.y,
+              vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 1.2,
+              r: rnd(0.2, 0.4), t: 0, dur: 0.45, color: '#a1a1aa'
+            });
+          }
+          break;
+        case 'cashIncome':
+          Audio.play('coin');
+          this.addFloatText(ev.x, ev.y - 0.8, `+${ev.amount}$`, '#22c55e', true);
+          break;
+        case 'blimpDrop':
+          Audio.play('deploy');
+          this.rings.push({ x: ev.x, y: ev.y, r0: 0.3, r1: 1.2, t: 0, dur: 0.4, color: '#f59e0b' });
+          break;
+        case 'blimpCrash':
+          Audio.play('explosion', { big: true });
+          this.triggerShake(JUICE.shakeBig.amp, JUICE.shakeBig.time);
+          this._spawnExplosionFX(ev.x, ev.y, ev.r || 2.8, '#f97316', 32);
+          break;
+        case 'flakBurst':
+          Audio.play('flak');
+          this.rings.push({ x: ev.x, y: ev.y, r0: 0.2, r1: 1.8, t: 0, dur: 0.28, color: '#f59e0b' });
+          this._spawnExplosionFX(ev.x, ev.y, 1.2, '#64748b', 12);
+          break;
+        case 'acidSplash':
+          Audio.play('acid');
+          this.rings.push({ x: ev.x, y: ev.y, r0: 0.2, r1: ev.r || 2.0, t: 0, dur: 0.35, color: '#84cc16' });
+          break;
+        case 'bouncerCleave':
+          Audio.play('melee');
+          this.rings.push({ x: ev.x, y: ev.y, r0: 0.2, r1: ev.r || 2.0, t: 0, dur: 0.26, color: '#f59e0b' });
+          this.triggerShake(JUICE.shakeSmall.amp * 0.8, 0.12);
+          break;
+        case 'carCrashImpact':
+          Audio.play('explosion');
+          Audio.play('glass');
+          this.triggerShake(JUICE.shakeBig.amp, 0.28);
+          this._spawnExplosionFX(ev.x, ev.y, ev.r || 2.2, '#ef4444', 24);
+          break;
+        case 'chiefShield':
+          Audio.play('shield');
+          this.rings.push({ x: ev.x, y: ev.y, r0: 0.5, r1: ev.r || 6.0, t: 0, dur: 0.5, color: '#38bdf8' });
+          break;
         case 'death':
           for (let i = 0; i < 8; i++) {
             const a = rnd(0, Math.PI * 2), sp = rnd(0.8, 2.5);
@@ -343,6 +412,7 @@ export class Renderer {
     this._drawArena(ctx, game);
     this._drawTracks(ctx);
     this._drawAreas(ctx, game);
+    this._drawTraps(ctx, game);
 
     if (inspectedEntityId != null) {
       const ent = game.entities.find(e => e.id === inspectedEntityId && e.alive);
@@ -829,7 +899,50 @@ export class Renderer {
     ctx.lineWidth = 2.2;
     ctx.strokeRect(-r * 0.92, -r * 0.72, r * 1.84, r * 1.44);
 
-    if (e.cardId === 'bldg_barricade') {
+    if (e.cardId === 'bldg_police_spikes') {
+      // Поліцейський блокпост (Шипи 1x3 з миготливими маячками)
+      const w = r * 2.2, h = r * 0.9;
+      ctx.fillStyle = flash ? '#fff' : '#1f2937';
+      ctx.strokeStyle = '#111'; ctx.lineWidth = 2;
+      ctx.fillRect(-w / 2, -h / 2, w, h); ctx.strokeRect(-w / 2, -h / 2, w, h);
+      // Смуги шипів
+      ctx.fillStyle = '#9ca3af';
+      for (let i = -w * 0.42; i <= w * 0.42; i += 7) {
+        ctx.beginPath();
+        ctx.moveTo(i - 3, h * 0.3); ctx.lineTo(i, -h * 0.45); ctx.lineTo(i + 3, h * 0.3);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+      }
+      // Маячок (синій/червоний)
+      const blink = Math.sin(Date.now() * 0.01) > 0;
+      ctx.fillStyle = blink ? '#ef4444' : '#3b82f6';
+      ctx.beginPath(); ctx.arc(w * 0.42, -h * 0.5, 4.5, 0, Math.PI * 2); ctx.fill();
+    } else if (e.cardId === 'token_burning_wreck') {
+      // Палаючий остов авто після аварії
+      const w = r * 1.8, h = r * 1.1;
+      ctx.fillStyle = flash ? '#fff' : '#18181b';
+      ctx.strokeStyle = '#09090b'; ctx.lineWidth = 2;
+      ctx.fillRect(-w / 2, -h / 2, w, h); ctx.strokeRect(-w / 2, -h / 2, w, h);
+      // Палаючі язики вогню над остовом
+      for (let i = 0; i < 4; i++) {
+        const fx = -w * 0.35 + i * (w * 0.25);
+        const fy = -h * 0.4 - Math.abs(Math.sin(Date.now() * 0.008 + i)) * 10;
+        ctx.fillStyle = i % 2 === 0 ? '#f97316' : '#facc15';
+        ctx.beginPath(); ctx.arc(fx, fy, 5.5, 0, Math.PI * 2); ctx.fill();
+      }
+    } else if (e.cardId === 'bldg_counterfeit_press') {
+      // Підпільна друкарня (ротаційний верстат з паперами)
+      const w = r * 1.7, h = r * 1.2, wallH = r * 0.5;
+      ctx.fillStyle = flash ? '#fff' : '#064e3b';
+      ctx.strokeStyle = '#111'; ctx.lineWidth = 2.4;
+      ctx.fillRect(-w / 2, -h / 2, w, h); ctx.strokeRect(-w / 2, -h / 2, w, h);
+      // Вал друкарського верстата
+      ctx.fillStyle = '#10b981';
+      ctx.fillRect(-w * 0.35, -h * 0.25, w * 0.7, h * 0.3);
+      // Зелена банкнота, що вилітає
+      ctx.fillStyle = '#22c55e'; ctx.strokeStyle = '#052e16'; ctx.lineWidth = 1;
+      ctx.fillRect(-w * 0.2, h * 0.1, w * 0.4, h * 0.25);
+      ctx.strokeRect(-w * 0.2, h * 0.1, w * 0.4, h * 0.25);
+    } else if (e.cardId === 'bldg_barricade') {
       ctx.fillStyle = flash ? '#fff' : '#a8a29e';
       ctx.strokeStyle = '#111'; ctx.lineWidth = 2;
       for (const [dx, dy] of [[-0.48, -0.1], [0, -0.22], [0.48, -0.1], [-0.34, 0.24], [0.34, 0.24]]) {
@@ -892,7 +1005,7 @@ export class Renderer {
       ctx.restore();
     }
 
-    const flyH = e.flying ? ((look.type === 'heli' ? -34 : -26) + Math.sin(game.time * 4 + e.id) * 3) : 0;
+    const flyH = e.flying ? ((look.type === 'blimp' ? -42 : look.type === 'heli' ? -34 : -26) + Math.sin(game.time * 4 + e.id) * 3) : 0;
 
     // 1) М'яка тінь на землі
     ctx.fillStyle = 'rgba(0,0,0,0.4)';
@@ -936,6 +1049,8 @@ export class Renderer {
     else if (look.type === 'bike') this._drawBike25D(ctx, r, look, flash, e, game.time);
     else if (look.type === 'drone') this._drawDrone25D(ctx, r, look, flash, game.time);
     else if (look.type === 'heli') this._drawHeli25D(ctx, r, look, flash, game.time);
+    else if (look.type === 'blimp') this._drawBlimp25D(ctx, r, look, flash, game.time);
+    else if (look.type === 'truck_flak') this._drawFlakTruck25D(ctx, r, look, flash, e, game.time);
     else if (look.type === 'dog') this._drawDog25D(ctx, r, look, flash, e);
     else this._drawHuman25D(ctx, r, look, flash, e, game.time);
 
@@ -1265,6 +1380,69 @@ export class Renderer {
     ctx.restore();
   }
 
+  _drawBlimp25D(ctx, r, look, flash, time) {
+    ctx.save();
+    const R = r * 1.5;
+    // Корпус дирижабля
+    ctx.fillStyle = flash ? '#fff' : (look.body || '#292524');
+    ctx.strokeStyle = '#111'; ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, R * 1.3, R * 0.65, 0, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+    // Смуга вздовж корпусу
+    ctx.fillStyle = look.trim || '#f59e0b';
+    ctx.fillRect(-R * 0.9, -2, R * 1.8, 4);
+    // Хвостові плавники
+    ctx.fillStyle = '#1c1917';
+    ctx.beginPath();
+    ctx.moveTo(-R * 1.15, -R * 0.45); ctx.lineTo(-R * 1.4, -R * 0.6); ctx.lineTo(-R * 1.15, -R * 0.15);
+    ctx.fill(); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-R * 1.15, R * 0.45); ctx.lineTo(-R * 1.4, R * 0.6); ctx.lineTo(-R * 1.15, R * 0.15);
+    ctx.fill(); ctx.stroke();
+    // Гондола знизу
+    ctx.fillStyle = '#44403c';
+    ctx.fillRect(-R * 0.35, R * 0.55, R * 0.7, R * 0.25);
+    ctx.strokeRect(-R * 0.35, R * 0.55, R * 0.7, R * 0.25);
+    // Мафіозна емблема «M»
+    ctx.fillStyle = '#ef4444';
+    ctx.beginPath(); ctx.arc(0, 0, R * 0.28, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = `bold ${Math.round(R * 0.32)}px Impact, sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('M', 0, 0);
+    ctx.restore();
+  }
+
+  _drawFlakTruck25D(ctx, r, look, flash, e, time) {
+    ctx.save();
+    ctx.rotate(e.angle);
+    const w = r * 1.9, h = r * 1.05;
+    ctx.fillStyle = flash ? '#fff' : (look.body || '#334155');
+    ctx.strokeStyle = '#111'; ctx.lineWidth = 2.2;
+    // Кузов пікапа
+    this._roundRect(ctx, -w / 2, -h / 2, w, h, 4);
+    ctx.fill(); ctx.stroke();
+    // Кабіна
+    ctx.fillStyle = '#1e293b';
+    this._roundRect(ctx, w * 0.1, -h * 0.45, w * 0.35, h * 0.9, 3);
+    ctx.fill(); ctx.stroke();
+    // Скло кабіни
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillRect(w * 0.2, -h * 0.35, w * 0.18, h * 0.7);
+    // Зенітні здвоєні стволи ззаду
+    ctx.save();
+    ctx.translate(-w * 0.18, 0);
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(0, -5, w * 0.6, 3.5);
+    ctx.fillRect(0, 1.5, w * 0.6, 3.5);
+    ctx.strokeRect(0, -5, w * 0.6, 3.5);
+    ctx.strokeRect(0, 1.5, w * 0.6, 3.5);
+    ctx.beginPath(); ctx.arc(0, 0, 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.restore();
+    ctx.restore();
+  }
+
   _drawDog25D(ctx, r, look, flash, e) {
     ctx.save();
     ctx.rotate(e.angle);
@@ -1339,6 +1517,20 @@ export class Renderer {
           ctx.fillStyle = `rgba(190, 242, 100, ${0.24 * alpha})`;
           ctx.beginPath(); ctx.arc(cx, cy, r * 0.34, 0, Math.PI * 2); ctx.fill();
         }
+      } else if (a.kind === 'acid') {
+        const g = ctx.createRadialGradient(p.x, p.y, r * 0.1, p.x, p.y, r);
+        g.addColorStop(0, `rgba(132, 204, 22, ${0.45 * alpha})`);
+        g.addColorStop(0.7, `rgba(101, 163, 13, ${0.35 * alpha})`);
+        g.addColorStop(1, 'rgba(63, 98, 18, 0)');
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2); ctx.fill();
+        for (let i = 0; i < 5; i++) {
+          const ang = (i / 5) * Math.PI * 2 + game.time * 3;
+          const cx = p.x + Math.cos(ang) * r * 0.45;
+          const cy = p.y + Math.sin(ang) * r * 0.45;
+          ctx.fillStyle = `rgba(190, 242, 100, ${0.5 * alpha})`;
+          ctx.beginPath(); ctx.arc(cx, cy, 3.5 + Math.sin(game.time * 8 + i) * 2, 0, Math.PI * 2); ctx.fill();
+        }
       } else if (a.kind === 'vendetta') {
         const pulse = 0.85 + Math.sin(game.time * 7) * 0.15;
         const g = ctx.createRadialGradient(p.x, p.y, r * 0.1, p.x, p.y, r);
@@ -1367,6 +1559,29 @@ export class Renderer {
           ctx.beginPath(); ctx.arc(fx, fy, fh, 0, Math.PI * 2); ctx.fill();
         }
       }
+      ctx.restore();
+    }
+  }
+
+  // ---- Приховані пастки (Засідка в люку) ----
+  _drawTraps(ctx, game) {
+    if (!game.traps) return;
+    for (const tr of game.traps) {
+      if (tr.side !== 'P') continue; // Невидима для ворога!
+      const p = this.toScreen(tr.x, tr.y);
+      const r = tr.r * this.tile * 0.65;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.fillStyle = 'rgba(39, 39, 42, 0.75)';
+      ctx.strokeStyle = 'rgba(113, 113, 122, 0.9)';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = 'rgba(161, 161, 170, 0.6)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(-r * 0.6, 0); ctx.lineTo(r * 0.6, 0);
+      ctx.moveTo(0, -r * 0.6); ctx.lineTo(0, r * 0.6);
+      ctx.stroke();
       ctx.restore();
     }
   }

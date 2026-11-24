@@ -1,14 +1,15 @@
 // =====================================================================
-//  MAFIA ROYALE — DATA (v0.4.0)
+//  MAFIA ROYALE — DATA (v0.5.0)
+//  - 10 нових карт (Рикошет, Блокпост-шипи, Засідка в люку, Друкарня,
+//    Контрабандний дирижабль, Зенітка ППО, Хімік, Патрульний, Шеф поліції, Аварія)
+//  - Підвищена потужність Вишибали (сплеш-удар 1.5x кожен 3-й удар)
 //  - Збільшені фігурки юнітів (+55% масштабу), чітко видно всі деталі
 //  - 21 Арена з унікальними тактичними особливостями та погодою
 //  - Башні не можуть стріляти за свою половину арени (лінія річки)
 //  - 5 збережених слотів колод із швидким перемиканням
-//  - Кнопка очищення колоди та авто-заповнення вільних слотів
-//  - Спавнер «Підпільний клуб»: вибігає 4 шпани, і відразу при розміщенні
 // =====================================================================
 
-export const VERSION = '0.4.0';
+export const VERSION = '0.5.0';
 
 // ---------- Рідкість ----------
 export const RARITY = {
@@ -79,9 +80,9 @@ export const CARDS = [
   {
     id: 'unit_bouncer', name: 'Викидайло', kind: 'unit', role: 'Ближній бій', rarity: 'common', unlockArena: 1,
     cost: 4, count: 1, hp: 1850, shield: 0, dmg: 125, atkSpeed: 1.5, speedCode: 'SLOW', speed: 1.0,
-    range: 1, splash: 0, targets: 'BUILDINGS_ONLY', special: 'NONE',
+    range: 1, splash: 0, targets: 'BUILDINGS_ONLY', special: 'CLEAVE_EVERY_3_HITS',
     size: 0.65, sight: 7, aiRole: 'tank',
-    desc: 'Колишній боксер у важкій вазі. Ігнорує дрібних ворогів і йде прямо ламати ворожі вежі.',
+    desc: 'Колишній боксер у важкій вазі. Ігнорує дрібних ворогів і йде прямо ламати вежі, а кожен 3-й удар завдає 1.5x шкоди по площі!',
     look: { type: 'human', body: '#27272a', skin: '#c99a76', hat: 'bald', weapon: 'fists', scale: 1.28, shades: true },
   },
   {
@@ -298,12 +299,100 @@ export const CARDS = [
     desc: 'Його присутність на вулиці змушує підлеглих стріляти й битися на 20% швидше.',
     look: { type: 'human', body: '#111111', skin: '#d2a07a', hat: 'fedora', hatColor: '#f5f5f4', hatBand: '#111', weapon: 'revolver', scale: 1.18, rose: true },
   },
+
+  // --- Арена 6+: Фабрика та Нові Тактичні Карти (10 нових карт v0.5.0) ---
+  {
+    id: 'spell_ricochet', name: 'Рикошет', kind: 'spell', role: 'Ланцюгова куля', rarity: 'rare', unlockArena: 2,
+    cost: 2, count: 0, hp: 0, shield: 0, dmg: 120, atkSpeed: 0, speedCode: 'INSTANT', speed: 0,
+    range: 99, splash: 2.5, targets: 'ALL', special: 'RICOCHET_CHAIN_4',
+    baseDamage: 120, bounceRadius: 3.5, bounces: 4, damageScale: 0.15, flightTime: 0.25,
+    aiRole: 'spell_damage',
+    desc: 'Сліпа куля відскакує між 4 ворогами (+15% шкоди за відскок: 120 → 138 → 159 → 182). Б\'є землю, повітря і будівлі!',
+  },
+  {
+    id: 'bldg_police_spikes', name: 'Поліцейський блокпост', kind: 'building', role: 'Пастка / Шипи', rarity: 'common', unlockArena: 2,
+    cost: 2, count: 1, hp: 350, shield: 0, dmg: 25, atkSpeed: 0.5, speedCode: 'STATIC', speed: 0,
+    range: 1.5, splash: 1.5, targets: 'GROUND', special: 'SPIKES_TRAP',
+    lifetime: 25, dps: 50, slowPct: 0.50, vehicleMult: 3.0, size: 0.85, isTrap: true,
+    aiRole: 'building_defense',
+    desc: 'Смуга сталевих шипів 1x3. Сповільнює на 50%, завдає 25 шкоди/0.5с. Техніці завдає потрійної шкоди (75) та збиває таран!',
+    look: { type: 'spikes', body: '#1f2937', light: '#3b82f6' },
+  },
+  {
+    id: 'spell_manhole_ambush', name: 'Засідка в люку', kind: 'spell', role: 'Прихована пастка', rarity: 'epic', unlockArena: 3,
+    cost: 3, count: 0, hp: 0, shield: 0, dmg: 90, atkSpeed: 0, speedCode: 'INSTANT', speed: 0,
+    range: 99, splash: 1.2, targets: 'GROUND', special: 'MANHOLE_TRAP',
+    stunDuration: 1.0, impactDmg: 90, spawnToken: 'token_sawn_off_mob', spawnCount: 2, flightTime: 0.2,
+    aiRole: 'trap',
+    desc: 'Невидима каналізаційна пастка. При наступі ворога кришка люка підкидає і оглушує на 1с, а з люка вистрибують 2 гангстери з обрізами!',
+  },
+  {
+    id: 'bldg_counterfeit_press', name: 'Підпільна друкарня', kind: 'building', role: 'Економіка + Інфляція', rarity: 'epic', unlockArena: 6,
+    cost: 4, count: 1, hp: 550, shield: 0, dmg: 0, atkSpeed: 8.0, speedCode: 'STATIC', speed: 0,
+    range: 0, splash: 0, targets: 'NONE', special: 'COUNTERFEIT_INFLATION',
+    lifetime: 30, incomeEvery: 8.0, incomeAmount: 1, size: 0.95,
+    aiRole: 'building_economy',
+    desc: 'Кожні 8 секунд приносить +1$. Головна фішка: заражає 1 випадкову карту в руці ворога інфляцією (+1$ до вартості)!',
+    look: { type: 'press', body: '#064e3b', roller: '#10b981' },
+  },
+  {
+    id: 'unit_contraband_blimp', name: 'Контрабандний дирижабль', kind: 'unit', role: 'Повітряний авіаносець', rarity: 'legendary', unlockArena: 6,
+    cost: 7, count: 1, hp: 2100, shield: 0, dmg: 0, atkSpeed: 6.0, speedCode: 'SLOW', speed: 0.8,
+    range: 0.8, splash: 0, targets: 'BUILDINGS_ONLY', special: 'BLIMP_AIR_CARRIER',
+    flying: true, dropEvery: 6.0, dropCount: 2, dropCard: 'unit_thugs', deathDmg: 420, deathSplash: 2.8,
+    size: 0.95, sight: 9, aiRole: 'tank',
+    desc: 'Повільно пливе до ворожої вежі. Кожні 6с скидає на парашутах 2 бійців шпани. При падінні розбивається з колосальним вибухом (420 сплеш)!',
+    look: { type: 'blimp', body: '#1c1917', trim: '#f59e0b' },
+  },
+  {
+    id: 'unit_aa_truck', name: 'Зенітка на пікапі', kind: 'unit', role: 'Винищувач авіації', rarity: 'rare', unlockArena: 3,
+    cost: 4, count: 1, hp: 680, shield: 0, dmg: 95, atkSpeed: 0.9, speedCode: 'MEDIUM', speed: 1.6,
+    range: 6.0, splash: 0, targets: 'ALL', special: 'ANTI_AIR_BURST',
+    airMult: 2.0, airSplash: 1.8, vehicle: true, shot: 'flak',
+    size: 0.68, sight: 7.2, aiRole: 'shooter',
+    desc: 'Мобільне ППО мафії (дальність 6.0). Пріоритетно збиває авіацію з x2 шкодою та зенітним розривом 1.8. По землі стріляє кулеметом.',
+    look: { type: 'truck_flak', body: '#334155', cannon: '#0f172a' },
+  },
+  {
+    id: 'unit_toxin_chemist', name: 'Хімік із токсинами', kind: 'unit', role: 'Кислотна зона / Дебаф', rarity: 'epic', unlockArena: 4,
+    cost: 4, count: 1, hp: 520, shield: 0, dmg: 60, atkSpeed: 1.4, speedCode: 'MEDIUM', speed: 1.4,
+    range: 4.5, splash: 2.0, targets: 'GROUND', special: 'ACID_PUDDLE_DOT',
+    puddleDuration: 4.0, puddleDps: 35, puddleSlowAtk: 0.25, shot: 'acid_flask',
+    size: 0.44, sight: 6.0, aiRole: 'control',
+    desc: 'Кидає колби з кислотою. Утворює отруйну калюжу на 4 сек: 35 шкоди/сек та знижує швидкість атаки й шкоду ворогів на -25%!',
+    look: { type: 'human', body: '#14532d', skin: '#e6bf9c', mask: '#84cc16', weapon: 'flask', apron: '#3f6212' },
+  },
+  {
+    id: 'unit_police_patrol', name: 'Патрульний', kind: 'unit', role: 'Швидкий захисник', rarity: 'common', unlockArena: 1,
+    cost: 2, count: 1, hp: 350, shield: 0, dmg: 65, atkSpeed: 1.1, speedCode: 'FAST', speed: 2.2,
+    range: 0.7, splash: 0, targets: 'GROUND', special: 'NONE', faction: 'police',
+    size: 0.42, sight: 5.5, aiRole: 'defender',
+    desc: 'Швидкий офіцер патрульної поліції з кийком. Миттєво прибуває на лінію для перехоплення диверсантів та швидких ворогів.',
+    look: { type: 'human', body: '#1e3a8a', skin: '#d2a07a', hat: 'police_cap', hatColor: '#172554', weapon: 'baton' },
+  },
+  {
+    id: 'unit_police_chief', name: 'Шеф поліції', kind: 'unit', role: 'Важкий лідер + Щит', rarity: 'epic', unlockArena: 5,
+    cost: 6, count: 1, hp: 1400, shield: 0, dmg: 180, atkSpeed: 1.3, speedCode: 'SLOW', speed: 1.1,
+    range: 5.0, splash: 0, targets: 'ALL', special: 'CHIEF_SPAWN_SHIELD', faction: 'police',
+    shieldAmount: 250, shieldRadius: 6.0, shieldDuration: 8.0, shot: 'revolver',
+    size: 0.58, sight: 6.8, aiRole: 'tank',
+    desc: 'Комісар міського управління. Стріляє з важкого револьвера. При виході віддає наказ у рацію: наділяє всіх союзників у радіусі 6.0 щитом 250 HP на 8 сек!',
+    look: { type: 'human', body: '#0f172a', skin: '#d2a07a', hat: 'chief_hat', hatColor: '#1e293b', badge: '#facc15', weapon: 'revolver', scale: 1.18 },
+  },
+  {
+    id: 'spell_car_crash', name: 'Аварія на дорозі', kind: 'spell', role: 'Таран + Барикада', rarity: 'epic', unlockArena: 4,
+    cost: 4, count: 0, hp: 0, shield: 0, dmg: 260, atkSpeed: 0, speedCode: 'INSTANT', speed: 0,
+    range: 99, splash: 2.2, targets: 'ALL', special: 'CAR_CRASH_WRECK',
+    impactDmg: 260, knockback: 1.4, flightTime: 0.35,
+    aiRole: 'spell_damage',
+    desc: 'Автотроща: завдає 260 шкоди по площі, відкидає ворогів назад і залишає на місці палаючий остов авто (700 HP на 10с), що блокує дорогу!',
+  },
 ];
 
 export const CARD_CAPACITY_TOTAL = 150;
 export const CARD_CAPACITY_PER_ARENA = 30;
 
-// Токени (охоронці з Інкасатора + 3 мафіозі з Лімузина)
+// Токени (охоронці, мафіозі, гангстери з обрізами, остов авто)
 export const TOKENS = {
   token_guard: {
     id: 'token_guard', name: 'Охоронець', kind: 'unit', rarity: 'rare',
@@ -316,6 +405,18 @@ export const TOKENS = {
     count: 1, hp: 260, shield: 0, dmg: 70, atkSpeed: 1.0, speed: 1.6, range: 3.8, splash: 0,
     targets: 'ALL', special: 'NONE', size: 0.4, sight: 5.8, shot: 'pistol',
     look: { type: 'human', body: '#18181b', skin: '#e0b48f', hat: 'fedora', hatColor: '#27272a', weapon: 'pistol' },
+  },
+  token_sawn_off_mob: {
+    id: 'token_sawn_off_mob', name: 'Гангстер з обрізом', kind: 'unit', rarity: 'epic',
+    count: 1, hp: 280, shield: 0, dmg: 85, atkSpeed: 1.0, speed: 1.8, range: 1.5, splash: 0.6,
+    targets: 'GROUND', special: 'NONE', size: 0.42, sight: 5.5, shot: 'shotgun',
+    look: { type: 'human', body: '#27272a', skin: '#d2a07a', hat: 'fedora', hatColor: '#18181b', weapon: 'shotgun' },
+  },
+  token_burning_wreck: {
+    id: 'token_burning_wreck', name: 'Палаючий остов авто', kind: 'building', rarity: 'epic',
+    count: 1, hp: 700, shield: 0, dmg: 0, atkSpeed: 10, speed: 0, range: 0, splash: 0,
+    targets: 'NONE', special: 'WRECK_OBSTACLE', size: 0.9, lifetime: 10, decayPerSec: 70, isObstacle: true,
+    look: { type: 'wreck', body: '#18181b', fire: true },
   },
 };
 
@@ -730,6 +831,28 @@ export const DEFAULT_TOWER = 'tower_mafia_mansion';
 //  КРИМІНАЛЬНА ХРОНІКА ТА НОВИНИ ОНОВЛЕНЬ (GAME_NEWS)
 // =====================================================================
 export const GAME_NEWS = [
+  {
+    id: 'news_v0_5_0',
+    version: '0.5.0',
+    date: '24.11.2026',
+    badge: '10 НОВИХ КАРТ',
+    badgeColor: '#EC4899',
+    title: 'Арсенал Синдикату: 10 нових карт, пастки та ППО!',
+    summary: 'Грандіозне поповнення арсеналу: ланцюговий Рикошет, дорожні шипи, засідка в люку, фальшивомонетники, дирижабль, зенітка ППО, токсичний хімік, патрульні, шеф поліції та автотроща!',
+    bannerEmoji: '⚡',
+    changes: [
+      '⚡ Рикошет (Сліпа куля): влучає в найжирнішу ціль і відскакує 4 рази із наростаючою шкодою (+15% за відскок: 120 → 138 → 159 → 182).',
+      '🚧 Поліцейський блокпост (Шипи): смуга шипів на мосту сповільнює на 50%, завдає потрійної шкоди техніці (75/0.5с) та збиває таран.',
+      '🕳️ Засідка в люку: невидима пастка підкидає і оглушує ворога на 1с, а з люка вискакують 2 гангстери з обрізами прямо за спину ворогу.',
+      '🖨️ Підпільна друкарня: друкує +1$ кожні 8с і заражає 1 випадкову карту в руці ворога інфляцією (+1$ до вартості).',
+      '🎈 Контрабандний дирижабль: повітряний супер-танк (2100 HP), скидає по 2 десантники кожні 6с та падає з вибухом на 420 сплеш-шкоди.',
+      '🚚 Зенітка на пікапі: збиває ворожу авіацію на дистанції 6.0 із подвійною шкодою та розривним сплешем.',
+      '🧪 Хімік із токсинами: кидає кислотні колби, створюючи токсичну калюжу (35 DoT/с та -25% швидкості атаки ворогів).',
+      '👮 Патрульний та Шеф поліції: швидкий патрульний з кийком (2$) та Шеф (6$), що наділяє союзників щитом 250 HP на 8 секунд.',
+      '💥 Аварія на дорозі: таран із відкиданням (260 шкоди) та залишенням палаючого остова (700 HP) як барикади.',
+      '🥊 Посилення Вишибали: кожен 3-й удар колишнього боксера тепер завдає 1.5x шкоди по площі!'
+    ]
+  },
   {
     id: 'news_v0_4_0',
     version: '0.4.0',
