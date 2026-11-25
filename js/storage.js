@@ -99,6 +99,9 @@ function defaultProfile(username = 'Новачок', password = '') {
       recentResults: [], // останні 6 боїв ('W'|'L'|'D') для чесного MMR бота
     },
     settings: { sound: true, music: true, fullscreen: false },
+    crownChest: { crowns: 0, target: 10 },
+    claimedRoad: [],
+    battleLog: [],
     lastSeenVersion: null,
     seenNewsIds: [],
   };
@@ -144,6 +147,11 @@ function normalizeProfile(d, fallbackName = 'Гравець') {
   d.storyBranch = d.storyBranch || 'mafia';
   d.lastSeenVersion = typeof d.lastSeenVersion === 'string' ? d.lastSeenVersion : null;
   d.seenNewsIds = Array.isArray(d.seenNewsIds) ? d.seenNewsIds : [];
+  d.crownChest = (d.crownChest && typeof d.crownChest === 'object')
+    ? { crowns: Math.max(0, d.crownChest.crowns || 0), target: 10 }
+    : { crowns: 0, target: 10 };
+  d.claimedRoad = Array.isArray(d.claimedRoad) ? d.claimedRoad : [];
+  d.battleLog = Array.isArray(d.battleLog) ? d.battleLog.slice(0, 15) : [];
 
   if (typeof d.trophies !== 'number') d.trophies = 0;
   if (typeof d.maxTrophies !== 'number' || d.maxTrophies < d.trophies) d.maxTrophies = d.trophies;
@@ -502,5 +510,18 @@ export function applyChest(reward) {
   Save.data.gold += reward.gold;
   for (const it of reward.cards) Save.data.cards[it.id].count += it.count;
   Save.data.stats.chestsOpened = (Save.data.stats.chestsOpened || 0) + 1;
+  Save.save();
+}
+
+export function recordBattleLog(entry) {
+  if (!Save.data.battleLog) Save.data.battleLog = [];
+  Save.data.battleLog.unshift(entry);
+  Save.data.battleLog = Save.data.battleLog.slice(0, 15);
+  Save.save();
+}
+
+export function addCrownChestProgress(crowns) {
+  if (!Save.data.crownChest) Save.data.crownChest = { crowns: 0, target: 10 };
+  Save.data.crownChest.crowns = Math.min(20, (Save.data.crownChest.crowns || 0) + (crowns || 0));
   Save.save();
 }

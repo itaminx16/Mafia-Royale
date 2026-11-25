@@ -26,6 +26,7 @@ export class Renderer {
     this.tracks = [];
     this.rings = [];
     this.cardsFly = [];
+    this.emotes = [];
     this.banner = null;
     this.resize();
   }
@@ -68,8 +69,14 @@ export class Renderer {
     this.tracks = [];
     this.rings = [];
     this.cardsFly = [];
+    this.emotes = [];
     this.shake = { t: 0, maxT: 0.25, amp: 0 };
     this.banner = null;
+  }
+
+  addEmote(side, emoji, text) {
+    this.emotes = this.emotes.filter(em => em.side !== side);
+    this.emotes.push({ side, emoji, text, t: 0, dur: 2.6 });
   }
 
   triggerShake(amp, time) {
@@ -414,6 +421,7 @@ export class Renderer {
     this.tracks = stepList(this.tracks);
     this.rings = stepList(this.rings);
     this.cardsFly = stepList(this.cardsFly);
+    this.emotes = stepList(this.emotes);
   }
 
   // ------------------------------------------------------------------
@@ -476,6 +484,7 @@ export class Renderer {
     if (aim && aim.cardId && aim.inArena) this._drawAimCursor(ctx, game, aim);
 
     this._drawFloatTexts(ctx);
+    this._drawEmotes(ctx);
     if (game.extraTime) this._drawExtraTimeVignette(ctx, game.time);
     if (this.banner) this._drawBanner(ctx);
 
@@ -1774,6 +1783,31 @@ export class Renderer {
         ctx.fillStyle = pt.color || '#f97316';
         ctx.beginPath(); ctx.arc(0, 0, (pt.r || 0.2) * this.tile * (1 - k * 0.4), 0, Math.PI * 2); ctx.fill();
       }
+      ctx.restore();
+    }
+  }
+
+  _drawEmotes(ctx) {
+    for (const em of this.emotes) {
+      const king = ARENA.towers[em.side].king;
+      const p = this.toScreen(king.x, king.y);
+      const yOff = em.side === 'P' ? -52 : 52;
+      const alpha = em.t > em.dur - 0.4 ? Math.max(0, (em.dur - em.t) / 0.4) : 1;
+      const pop = em.t < 0.18 ? (0.5 + (em.t / 0.18) * 0.5) : 1;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.translate(p.x, p.y + yOff);
+      ctx.scale(pop, pop);
+      ctx.fillStyle = '#fefce8';
+      ctx.strokeStyle = '#111827';
+      ctx.lineWidth = 2.5;
+      this._roundRect(ctx, -56, -22, 112, 38, 12);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#111827';
+      ctx.font = 'bold 14px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`${em.emoji} ${em.text}`, 0, -3);
       ctx.restore();
     }
   }

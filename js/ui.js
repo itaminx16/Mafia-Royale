@@ -6,9 +6,13 @@
 import {
   VERSION, CARDS, CARD_MAP, TOWERS, TOWER_MAP, ARENAS, CHESTS, RARITY,
   ECONOMY, LEVEL_MAX, CARD_CAPACITY_TOTAL, CARD_CAPACITY_PER_ARENA,
-  STORY_CAMPAIGNS, STORY_CHAPTERS, GAME_MODES, GAME_NEWS, statAtLevel, arenaForTrophies,
+  STORY_CAMPAIGNS, STORY_CHAPTERS, GAME_MODES, GAME_NEWS, TROPHY_ROAD, EMOTES,
+  statAtLevel, arenaForTrophies,
 } from './data.js';
-import { Save, rollChestType, generateChest, applyChest } from './storage.js';
+import {
+  Save, rollChestType, generateChest, applyChest,
+  recordBattleLog, addCrownChestProgress,
+} from './storage.js';
 import { Audio } from './audio.js';
 import { portraitSVG } from './portraits.js';
 import { Game } from './game.js';
@@ -530,6 +534,98 @@ class AppUI {
 
     const st = d.stats;
     this.el.battleStatsLine.textContent = `Боїв: ${st.battles} • Перемог: ${st.wins} • Поразок: ${st.losses} • Нічиїх: ${st.draws}`;
+
+    // Скринька за корони (10 корон) + Трофейна дорога
+    const cc = d.crownChest || { crowns: 0, target: 10 };
+    const ccEl = document.getElementById('crown-chest-count');
+    const ccBtn = document.getElementById('btn-crown-chest');
+    if (ccEl && ccBtn) {
+      ccEl.textContent = cc.crowns >= cc.target ? 'ВІДКРИТИ!' : `${cc.crowns} / ${cc.target}`;
+      ccBtn.classList.toggle('ready', cc.crowns >= cc.target);
+      ccBtn.onclick = () => {
+        Audio.unlock();
+        if ((Save.data.crownChest?.crowns || 0) >= 10) {
+          Save.data.crownChest.crowns -= 10;
+          Save.save();
+          const goldChest = CHESTS.find(c => c.id === 'gold') || CHESTS[1];
+          this.renderBattleTab();
+          this.openChestSequence(goldChest);
+        } else {
+          Audio.play('click');
+          alert(`Зберіть ${10 - (Save.data.crownChest?.crowns || 0)} ще корон у боях, щоб відкрити Золотий Кейс!`);
+        }
+      };
+    }
+    const unclaimed = TROPHY_ROAD.filter(m => (d.maxTrophies || d.trophies) >= m.trophies && !(d.claimedRoad || []).includes(m.id));
+    const roadBadge = document.getElementById('trophy-road-badge');
+    const roadBtn = document.getElementById('btn-trophy-road');
+    if (roadBadge) {
+      roadBadge.textContent = unclaimed.length;
+      roadBadge.classList.toggle('hidden', unclaimed.length === 0);
+    }
+    if (roadBtn) {
+      roadBtn.onclick = () => {
+        Audio.unlock();
+        Audio.play('click');
+        this.openTrophyRoadModal();
+      };
+    }
+  }
+
+  openTrophyRoadModal() {
+    const d = Save.data;
+    const modal = document.getElementById('road-modal');
+    const body = document.getElementById('road-modal-body');
+    const best = Math.max(d.trophies, d.maxTrophies || 0);
+    const claimed = d.claimedRoad || [];
+    body.innerHTML = `
+      <div class="modal-title">
+        <h3>🛤️ Трофейна дорога (${best} 🏆)</h3>
+        <button class="btn-ghost-sm" data-close-modal>✕</button>
+      </div>
+      <p class="modal-desc">Досягайте нових порогів Авторитету та забирайте нагороди!</p>
+      <div class="road-list">
+        ${TROPHY_ROAD.map(m => {
+          const ok = best >= m.trophies;
+          const got = claimed.includes(m.id);
+          return `
+            <div class="road-row ${ok && !got ? 'unlocked' : ''}">
+              <div>
+                <strong>${m.icon} ${m.label}</strong>
+                <div style="font-size:11px; color:#9ca3af">Поріг: ${m.trophies} 🏆</div>
+              </div>
+              ${got
+                ? '<span style="color:#22c55e; font-weight:700">✔ Забрано</span>'
+                : ok
+                  ? `<button class="btn-gold btn-claim-road" data-road-id="${m.id}" style="padding:6px 10px; font-size:11px">Забрати!</button>`
+                  : `<span style="color:#6b7280">🔒 ${m.trophies} 🏆</span>`}
+            </div>
+          `;
+        }).join('')}
+      </div>
+      <button class="btn-ghost" data-close-modal style="width:100%">Закрити</button>
+    `;
+    modal.classList.remove('hidden');
+    body.querySelectorAll('.btn-claim-road').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const m = TROPHY_ROAD.find(x => x.id === btn.dataset.roadId);
+        if (!m || Save.data.claimedRoad.includes(m.id)) return;
+        Save.data.claimedRoad.push(m.id);
+        if (m.type === 'gold') {
+          Save.data.gold += m.amount;
+          Save.save();
+          Audio.play('coin');
+          this.refreshAll();
+          this.openTrophyRoadModal();
+        } else {
+          Save.save();
+          modal.classList.add('hidden');
+          const ch = CHESTS.find(c => c.id === m.chestId) || CHESTS[0];
+          this.refreshAll();
+          this.openChestSequence(ch);
+        }
+      });
+    });
   }
 
   // ==================================================================
@@ -774,6 +870,21 @@ class AppUI {
         <div style="font-size:11.5px; color:#cbd5e1; margin-top:3px; line-height:1.35">
           Рівень карт бота автоматично підлаштовується під середній рівень вашої колоди (${Save.avgDeckLevel().toFixed(1)}), а складність тактики плавно зростає разом із вашими кубками.
         </div>
+      </div>
+      <div style="font-size:12px; font-weight:800; color:#fde047; margin-bottom:6px">📜 Останні бої (Історія):</div>
+      <div class="battle-log-list" style="max-height:200px">
+        ${(d.battleLog && d.battleLog.length) ? d.battleLog.map(b => {
+          const cls = b.winner === 'P' ? 'win' : b.winner === 'E' ? 'lose' : 'draw';
+          const lbl = b.winner === 'P' ? 'ПЕРЕМОГА' : b.winner === 'E' ? 'ПОРАЗКА' : 'НІЧИЯ';
+          const dTxt = b.delta ? (b.delta > 0 ? `+${b.delta}🏆` : `${b.delta}🏆`) : '0🏆';
+          return `<div class="blog-row ${cls}">
+            <div>
+              <strong>${lbl} (${b.crownsP}:${b.crownsE} 👑)</strong>
+              <div style="font-size:10.5px; color:#9ca3af">vs ${b.botName || 'Бот'} • ${b.date || ''}</div>
+            </div>
+            <span style="font-weight:800; color:${b.delta > 0 ? '#22c55e' : b.delta < 0 ? '#ef4444' : '#9ca3af'}">${dTxt}</span>
+          </div>`;
+        }).join('') : '<div class="hint-text">Ще немає зіграних боїв</div>'}
       </div>
       <button class="btn-ghost" data-close-modal style="width:100%">Закрити</button>
     `;
@@ -1723,16 +1834,20 @@ class AppUI {
 
     const hand = g.sides.P.hand;
     const nextId = g.nextCard('P');
-    const key = hand.join(',') + '|' + nextId + '|' + this.selectedHandIdx;
+    const fakeOn = g.hasCounterfeit('P');
+    const key = hand.join(',') + '|' + nextId + '|' + this.selectedHandIdx + '|' + fakeOn;
     if (key !== this._lastHandKey) {
       this._lastHandKey = key;
       this.el.handSlots.innerHTML = hand.map((cid, idx) => {
         const c = CARD_MAP[cid];
         const lv = g.sides.P.levels[cid] || 1;
         const sel = this.selectedHandIdx === idx;
+        const effCost = g.cardCost('P', cid, idx);
+        const isFake = fakeOn && idx === 0;
         return `
           <div class="battle-card rarity-${c.rarity} ${sel ? 'selected' : ''}" data-hand-idx="${idx}" data-card-id="${cid}">
-            <span class="bcard-cost">${c.cost}$</span>
+            ${isFake ? '<span class="bcard-fake-badge">FAKE +1$</span>' : ''}
+            <span class="bcard-cost">${effCost}$</span>
             <span class="bcard-lv">Р${lv}</span>
             <div class="bcard-art">${portraitSVG(cid)}</div>
             <div class="bcard-name">${c.name}</div>
@@ -1749,8 +1864,9 @@ class AppUI {
     }
 
     this.el.handSlots.querySelectorAll('.battle-card').forEach(el => {
+      const idx = +el.dataset.handIdx;
       const cid = el.dataset.cardId;
-      const cost = CARD_MAP[cid].cost;
+      const cost = g.cardCost('P', cid, idx);
       el.classList.toggle('unaffordable', cash < cost);
     });
   }
@@ -1766,6 +1882,31 @@ class AppUI {
       Audio.play('click');
       this.game._finish('E');
     });
+
+    const emoteBtn = document.getElementById('btn-emote-toggle');
+    const emotePicker = document.getElementById('emote-picker');
+    if (emoteBtn && emotePicker) {
+      emotePicker.innerHTML = EMOTES.map(em => `<button class="emote-btn" data-emote-id="${em.id}">${em.emoji}</button>`).join('');
+      emoteBtn.addEventListener('click', () => {
+        Audio.play('click');
+        emotePicker.classList.toggle('hidden');
+      });
+      emotePicker.querySelectorAll('.emote-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const em = EMOTES.find(x => x.id === btn.dataset.emoteId);
+          if (!em || !this.renderer) return;
+          Audio.play('select');
+          this.renderer.addEmote('P', em.emoji, em.text);
+          emotePicker.classList.add('hidden');
+          // Бот відповідає емодзі через 0.9 сек
+          setTimeout(() => {
+            if (!this.game || this.game.over || !this.renderer) return;
+            const rep = EMOTES[Math.floor(Math.random() * EMOTES.length)];
+            this.renderer.addEmote('E', rep.emoji, rep.text);
+          }, 900);
+        });
+      });
+    }
 
     // 1) Натискання на карту в руці — ДОЗВОЛЕНО навіть якщо не вистачає коштів!
     this.el.handSlots.addEventListener('pointerdown', e => {
@@ -1943,6 +2084,9 @@ class AppUI {
           }
           wonChest = rollChestType();
         }
+      } else if (mode === 'training') {
+        bonusGold = 10;
+        d.gold += bonusGold;
       } else {
         delta = arena.win;
         d.trophies += delta;
@@ -1954,7 +2098,7 @@ class AppUI {
     } else if (res.winner === 'E') {
       st.losses++;
       st.streak = 0;
-      if (mode !== 'story') st.recentResults = [...st.recentResults, 'L'].slice(-6);
+      if (mode !== 'story' && mode !== 'training') st.recentResults = [...st.recentResults, 'L'].slice(-6);
       title = 'ПОРАЗКА';
       badgeClass = 'lose';
       Audio.play('defeat');
@@ -1965,14 +2109,28 @@ class AppUI {
         cs.vendetta = true;
         d.storyState[ch.id] = cs;
         storyNote = `🔥 Активовано «Вендету» (+50% золота за реванш) і відкрито Диверсію: «${ch.sabotageTitle}»!`;
-      } else if (mode !== 'story') {
+      } else if (mode !== 'story' && mode !== 'training') {
         delta = arena.lose;
         d.trophies = Math.max(0, d.trophies + delta);
       }
     } else {
       st.draws++;
-      if (mode !== 'story') st.recentResults = [...st.recentResults, 'D'].slice(-6);
+      if (mode !== 'story' && mode !== 'training') st.recentResults = [...st.recentResults, 'D'].slice(-6);
     }
+
+    if (mode !== 'training' && res.crownsP > 0) {
+      addCrownChestProgress(res.crownsP);
+    }
+    const nowStr = new Date().toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
+    recordBattleLog({
+      date: nowStr,
+      mode,
+      winner: res.winner,
+      crownsP: res.crownsP,
+      crownsE: res.crownsE,
+      delta,
+      botName: this.el.hudBotName?.textContent || 'Бот',
+    });
 
     if (d.autoArena) {
       d.selectedArena = arenaForTrophies(d.trophies).id;

@@ -89,6 +89,18 @@
           <!-- Активна колода (міні-смуга) -->
           <div id="active-deck-preview" class="active-deck-preview"></div>
 
+          <!-- Скринька за корони (10 корон) та Трофейна дорога -->
+          <div class="hub-progress-row">
+            <button id="btn-crown-chest" class="hub-prog-btn">
+              <span>👑 Кейс за корони</span>
+              <strong id="crown-chest-count">0 / 10</strong>
+            </button>
+            <button id="btn-trophy-road" class="hub-prog-btn">
+              <span>🛤️ Трофейна дорога</span>
+              <span id="trophy-road-badge" class="road-badge hidden">!</span>
+            </button>
+          </div>
+
           <!-- Головний ряд: [Колода] [ В БІЙ! ] [Режими] -->
           <div class="hub-action-row">
             <button id="btn-hub-deck" class="hub-side-btn">
@@ -227,6 +239,7 @@
           </div>
         </div>
         <div class="hud-right">
+          <button id="btn-emote-toggle" class="btn-surrender" title="Емодзі">💬</button>
           <button id="btn-fullscreen-battle" class="btn-surrender" title="На весь екран">⛶</button>
           <button id="btn-surrender" class="btn-surrender" title="Здатися">🏳️</button>
         </div>
@@ -235,6 +248,8 @@
       <div class="arena-viewport" id="arena-viewport">
         <canvas id="battle-canvas"></canvas>
       </div>
+
+      <div id="emote-picker" class="emote-picker hidden"></div>
 
       <footer class="battle-footer">
         <div class="hand-row">
@@ -289,6 +304,7 @@
     <div id="chest-modal" class="modal-backdrop hidden"><div class="modal-window" id="chest-modal-body"></div></div>
     <div id="result-modal" class="modal-backdrop hidden"><div class="modal-window" id="result-modal-body"></div></div>
     <div id="arena-modal" class="modal-backdrop hidden"><div class="modal-window" id="arena-modal-body"></div></div>
+    <div id="road-modal" class="modal-backdrop hidden"><div class="modal-window" id="road-modal-body"></div></div>
     <div id="modes-modal" class="modal-backdrop hidden"><div class="modal-window" id="modes-modal-body"></div></div>
     <div id="profile-modal" class="modal-backdrop hidden"><div class="modal-window" id="profile-modal-body"></div></div>
     <div id="settings-modal" class="modal-backdrop hidden"><div class="modal-window" id="settings-modal-body"></div></div>

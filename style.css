@@ -1396,3 +1396,97 @@ html, body {
 .filter-select:focus {
   border-color: #f59e0b;
 }
+
+/* ---------- Скринька за корони, Трофейна дорога, Емодзі, Історія боїв ---------- */
+.battle-card, #battle-canvas {
+  touch-action: none;
+}
+.hub-progress-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.hub-prog-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(180deg, #1f2937, #111827);
+  border: 1px solid #374151;
+  border-radius: 10px;
+  color: #f3f4f6;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  position: relative;
+}
+.hub-prog-btn.ready {
+  border-color: #f59e0b;
+  background: linear-gradient(180deg, #451a03, #1c1917);
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.35);
+}
+.road-badge {
+  background: #ef4444;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 900;
+  padding: 1px 6px;
+  border-radius: 99px;
+}
+.emote-picker {
+  position: absolute;
+  bottom: 118px;
+  right: 12px;
+  display: flex;
+  gap: 6px;
+  background: rgba(17, 24, 39, 0.95);
+  border: 1px solid #f59e0b;
+  border-radius: 12px;
+  padding: 6px 8px;
+  z-index: 40;
+}
+.emote-btn {
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 8px;
+  color: #fff;
+  padding: 5px 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.bcard-fake-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 8px;
+  font-weight: 900;
+  padding: 1px 3px;
+  border-radius: 3px;
+  z-index: 5;
+}
+.road-list, .battle-log-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 56vh;
+  overflow-y: auto;
+  margin: 10px 0;
+}
+.road-row, .blog-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #18181b;
+  border: 1px solid #27272a;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 12px;
+}
+.road-row.unlocked { border-color: #f59e0b; }
+.blog-row.win { border-left: 3px solid #22c55e; }
+.blog-row.lose { border-left: 3px solid #ef4444; }
+.blog-row.draw { border-left: 3px solid #9ca3af; }
