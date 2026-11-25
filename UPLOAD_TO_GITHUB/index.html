@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0c10" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="description" content="Mafia Royale — вертикальна стратегія в реальному часі у мафіозному нуар-сетингу." />
+  <title>Mafia Royale — Noir RTS</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app-shell">
+
+    <!-- ==================== ЕКРАН ВХОДУ / ПРОФІЛЮ ==================== -->
+    <div id="auth-screen" class="screen hidden">
+      <div class="auth-wrap">
+        <div class="auth-logo">
+          <div class="auth-hat">🎩</div>
+          <h1>MAFIA ROYALE</h1>
+          <p>NOIR TACTICAL CLASH</p>
+        </div>
+
+        <div class="auth-card">
+          <div class="auth-tabs">
+            <button class="auth-tab active" data-auth-mode="login">Увійти</button>
+            <button class="auth-tab" data-auth-mode="register">Створити профіль</button>
+          </div>
+
+          <form id="auth-form" class="auth-form" autocomplete="off">
+            <label>
+              <span>Нікнейм</span>
+              <input type="text" id="auth-username" placeholder="Введіть нікнейм..." maxlength="16" required />
+            </label>
+            <label>
+              <span>Пароль</span>
+              <input type="password" id="auth-password" placeholder="Введіть пароль..." maxlength="32" required />
+            </label>
+            <div id="auth-error" class="auth-error hidden"></div>
+            <button type="submit" id="auth-submit-btn" class="btn-battle-big auth-submit">
+              <span class="btn-battle-main">УВІЙТИ В МІСТО</span>
+            </button>
+          </form>
+
+          <div id="saved-accounts-box" class="saved-accounts hidden">
+            <div class="saved-title">Збережені профілі на цьому пристрої:</div>
+            <div id="saved-accounts-list" class="saved-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== ГОЛОВНЕ МЕНЮ ==================== -->
+    <div id="menu-screen" class="screen hidden">
+      <header class="top-bar">
+        <button id="btn-open-profile" class="profile-chip" title="Профіль та статистика">
+          <span class="profile-avatar" id="top-avatar">🎩</span>
+          <div class="profile-meta">
+            <div class="profile-name" id="top-username">Гравець</div>
+            <div class="profile-rank" id="top-rank">Новачок</div>
+          </div>
+        </button>
+
+        <div class="currencies">
+          <div class="pill pill-trophies" title="Авторитет (кубки)">
+            <span>🏆</span><strong id="top-trophies">0</strong>
+          </div>
+          <div class="pill pill-gold" title="Монети для прокачки та ринку">
+            <span>🪙</span><strong id="top-gold">500</strong>
+          </div>
+          <button id="btn-news" class="settings-circle news-btn" title="Кримінальні новини та оновлення">
+            <span>📰</span>
+            <span id="news-badge-dot" class="news-badge-dot hidden"></span>
+          </button>
+          <button id="btn-settings" class="settings-circle" title="Налаштування">⚙️</button>
+        </div>
+      </header>
+
+      <main class="menu-content">
+        <!-- ВКЛАДКА 1: ГОЛОВНА (БІЙ) — Компактний хаб як у Clash Royale -->
+        <section id="tab-battle" class="tab-page hub-page">
+          <!-- Поточна Арена по центру (натискання відкриває вікно вибору арен) -->
+          <div id="hero-arena-card" class="hero-arena-card" role="button" tabindex="0"></div>
+
+          <!-- Активна колода (міні-смуга) -->
+          <div id="active-deck-preview" class="active-deck-preview"></div>
+
+          <!-- Головний ряд: [Колода] [ В БІЙ! ] [Режими] -->
+          <div class="hub-action-row">
+            <button id="btn-hub-deck" class="hub-side-btn">
+              <span class="hsb-icon">🃏</span>
+              <span class="hsb-label">Колода</span>
+              <span class="hsb-sub" id="hub-deck-avg">3.5$</span>
+            </button>
+
+            <button id="btn-start-battle" class="btn-battle-big hub-play-btn">
+              <span class="btn-battle-main">⚔️ В БІЙ!</span>
+              <span class="btn-battle-sub" id="hub-mode-label">Рейтинговий бій</span>
+            </button>
+
+            <button id="btn-hub-modes" class="hub-side-btn">
+              <span class="hsb-icon" id="hub-mode-icon">🏆</span>
+              <span class="hsb-label">Режими</span>
+              <span class="hsb-sub">Сюжет / Бот</span>
+            </button>
+          </div>
+
+          <div id="battle-stats-line" class="stats-line"></div>
+        </section>
+
+        <!-- ВКЛАДКА 2: КОЛОДА, ВЕЖІ ТА КОЛЕКЦІЯ (18 / 150) -->
+        <section id="tab-deck" class="tab-page hidden">
+          <div class="section-head">
+            <h2>Головна вежа сім'ї (1 з 4)</h2>
+            <span class="hint-text">Пасивний бонус діє весь бій</span>
+          </div>
+          <div id="tower-grid" class="tower-grid"></div>
+
+          <div id="swap-banner" class="swap-banner hidden">
+            <span>Оберіть слот у колоді, щоб вставити: <strong id="swap-banner-name"></strong></span>
+            <button id="btn-cancel-swap" class="btn-ghost-sm">Скасувати</button>
+          </div>
+
+          <div class="deck-management-bar">
+            <div class="deck-slots-switcher">
+              <span class="dss-label">Колода:</span>
+              <button class="btn-deck-slot" data-deck-slot="0">1</button>
+              <button class="btn-deck-slot" data-deck-slot="1">2</button>
+              <button class="btn-deck-slot" data-deck-slot="2">3</button>
+              <button class="btn-deck-slot" data-deck-slot="3">4</button>
+              <button class="btn-deck-slot" data-deck-slot="4">5</button>
+            </div>
+            <button id="btn-clear-deck" class="btn-clear-deck" title="Очистити карти в цій колоді">🗑 Очистити</button>
+          </div>
+
+          <div class="section-head">
+            <h2>Бойова колода (<span id="deck-card-count">8</span> / 8)</h2>
+            <span class="avg-pill">Середня: <strong id="deck-avg-cost">3.5$</strong></span>
+          </div>
+          <div id="deck-slots" class="cards-grid deck-grid"></div>
+
+          <div class="section-head">
+            <h2>Колекція карт (<span id="collection-count">18</span> / 150)</h2>
+            <span class="hint-text">Натисніть для інфо, прокачки або заміни</span>
+          </div>
+          <div class="deck-filters-bar">
+            <select id="filter-rarity" class="filter-select" aria-label="Фільтр за рідкістю">
+              <option value="all">Усі рідкості</option>
+              <option value="common">Звичайні</option>
+              <option value="rare">Рідкісні</option>
+              <option value="epic">Епічні</option>
+              <option value="legendary">Легендарні</option>
+            </select>
+            <select id="filter-kind" class="filter-select" aria-label="Фільтр за типом">
+              <option value="all">Усі типи</option>
+              <option value="unit">Юніти</option>
+              <option value="building">Будівлі</option>
+              <option value="spell">Закляття</option>
+            </select>
+            <select id="filter-sort" class="filter-select" aria-label="Сортування">
+              <option value="arena">За ареною</option>
+              <option value="level">За рівнем (спад.)</option>
+              <option value="cost_asc">За ціною ($ ↑)</option>
+              <option value="cost_desc">За ціною ($ ↓)</option>
+              <option value="rarity">За рідкістю</option>
+            </select>
+          </div>
+          <div id="collection-grid" class="cards-grid"></div>
+
+          <!-- Місце під майбутні 132 карти по аренах -->
+          <div class="roadmap-box" id="collection-roadmap"></div>
+        </section>
+
+        <!-- ВКЛАДКА 3: РИНОК (АКЦІЇ ДНЯ ТА КЕЙСИ ТІЛЬКИ ЗА МОНЕТИ) -->
+        <section id="tab-shop" class="tab-page hidden">
+          <div class="section-head">
+            <h2>🔥 Акції дня на чорному ринку</h2>
+            <span class="hint-text">Оновлюються щодня</span>
+          </div>
+          <div id="daily-deals-grid" class="deals-grid"></div>
+
+          <div class="section-head">
+            <h2>💼 Кейси (тільки за монети)</h2>
+            <span class="hint-text">Також випадають за перемоги у бою</span>
+          </div>
+          <div id="chest-grid" class="chest-grid"></div>
+        </section>
+      </main>
+
+      <!-- Нижня панель навігації -->
+      <nav class="bottom-nav">
+        <button class="nav-tab active" data-tab="battle">
+          <span class="nav-icon">⚔️</span>
+          <span class="nav-label">Бій</span>
+        </button>
+        <button class="nav-tab" data-tab="deck">
+          <span class="nav-icon">🃏</span>
+          <span class="nav-label">Колода</span>
+        </button>
+        <button class="nav-tab" data-tab="shop">
+          <span class="nav-icon">🏪</span>
+          <span class="nav-label">Ринок</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- ==================== ЕКРАН БОЮ (МАКСИМАЛЬНО НА ВЕСЬ ЕКРАН) ==================== -->
+    <div id="battle-screen" class="screen hidden">
+      <header class="battle-hud">
+        <div class="hud-left">
+          <div id="hud-arena-name" class="hud-arena">Арена 1</div>
+          <div id="hud-bot-name" class="hud-bot">Бот</div>
+        </div>
+        <div class="hud-center">
+          <div class="hud-score">
+            <span class="score-p">🟦 👑 <strong id="hud-crowns-p">0</strong></span>
+            <span class="score-sep">:</span>
+            <span class="score-e"><strong id="hud-crowns-e">0</strong> 👑 🟥</span>
+          </div>
+          <div class="hud-timer-row">
+            <span id="hud-timer" class="hud-timer">3:00</span>
+            <span id="hud-mult" class="hud-mult">x1</span>
+          </div>
+        </div>
+        <div class="hud-right">
+          <button id="btn-fullscreen-battle" class="btn-surrender" title="На весь екран">⛶</button>
+          <button id="btn-surrender" class="btn-surrender" title="Здатися">🏳️</button>
+        </div>
+      </header>
+
+      <div class="arena-viewport" id="arena-viewport">
+        <canvas id="battle-canvas"></canvas>
+      </div>
+
+      <footer class="battle-footer">
+        <div class="hand-row">
+          <div id="next-card-slot" class="next-card-slot" title="Наступна карта"></div>
+          <div id="hand-slots" class="hand-slots"></div>
+        </div>
+        <div class="cash-row">
+          <div class="cash-badge">
+            <span class="cash-sign">$</span>
+            <strong id="cash-value">5$</strong>
+          </div>
+          <div class="cash-bar-track">
+            <div id="cash-bar-fill" class="cash-bar-fill" style="width:50%"></div>
+            <div id="cash-bar-ticks" class="cash-bar-ticks"></div>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <!-- Привид перетягування карти -->
+    <div id="drag-ghost" class="drag-ghost hidden"></div>
+
+    <!-- Секретна панель коду адміністратора Itaminx (1616) -->
+    <div id="secret-modal" class="modal-backdrop hidden">
+      <div class="modal-window secret-window">
+        <h3>🔐 Секретний доступ адміністратора</h3>
+        <p class="modal-desc">Виявлено профіль <strong>Itaminx</strong>. Введіть секретний код для підтвердження прав доступу:</p>
+        <input type="password" id="secret-code-input" class="secret-input" placeholder="••••" maxlength="8" inputmode="numeric" />
+        <div id="secret-error" class="auth-error hidden"></div>
+        <div class="modal-actions">
+          <button id="btn-secret-confirm" class="btn-primary">Підтвердити код</button>
+          <button id="btn-secret-cancel" class="btn-ghost">Скасувати</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Оверлей автооновлення гри (показує реальний прогрес завантаження) -->
+    <div id="update-overlay" class="modal-backdrop hidden">
+      <div class="modal-window update-window">
+        <div class="update-icon">⬇️</div>
+        <h3 id="update-title">Оновлення Mafia Royale...</h3>
+        <p id="update-notes" class="modal-desc" style="text-align:center"></p>
+        <div class="update-bar-track">
+          <div id="update-bar-fill" class="update-bar-fill" style="width:0%"></div>
+        </div>
+        <div id="update-status" class="update-status">Підготовка... 0%</div>
+      </div>
+    </div>
+
+    <!-- Універсальні модалки -->
+    <div id="card-modal" class="modal-backdrop hidden"><div class="modal-window" id="card-modal-body"></div></div>
+    <div id="chest-modal" class="modal-backdrop hidden"><div class="modal-window" id="chest-modal-body"></div></div>
+    <div id="result-modal" class="modal-backdrop hidden"><div class="modal-window" id="result-modal-body"></div></div>
+    <div id="arena-modal" class="modal-backdrop hidden"><div class="modal-window" id="arena-modal-body"></div></div>
+    <div id="modes-modal" class="modal-backdrop hidden"><div class="modal-window" id="modes-modal-body"></div></div>
+    <div id="profile-modal" class="modal-backdrop hidden"><div class="modal-window" id="profile-modal-body"></div></div>
+    <div id="settings-modal" class="modal-backdrop hidden"><div class="modal-window" id="settings-modal-body"></div></div>
+    <div id="admin-modal" class="modal-backdrop hidden"><div class="modal-window" id="admin-modal-body"></div></div>
+    <div id="whats-new-modal" class="modal-backdrop hidden"><div class="modal-window whats-new-window" id="whats-new-modal-body"></div></div>
+    <div id="news-modal" class="modal-backdrop hidden"><div class="modal-window news-window" id="news-modal-body"></div></div>
+
+  </div>
+
+  <script type="module" src="js/ui.js"></script>
+  <script>
+    if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js', { updateViaCache: 'none' }).then(reg => {
+          window._mrSwReg = reg;
+          window.addEventListener('online', () => {
+            reg.update().catch(() => {});
+            if (window.MafiaRoyaleApp && window.MafiaRoyaleApp.checkForUpdates) {
+              window.MafiaRoyaleApp.checkForUpdates(false);
+            }
+          });
+          document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && navigator.onLine) {
+              reg.update().catch(() => {});
+              if (window.MafiaRoyaleApp && window.MafiaRoyaleApp.checkForUpdates) {
+                window.MafiaRoyaleApp.checkForUpdates(false);
+              }
+            }
+          });
+        }).catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>
