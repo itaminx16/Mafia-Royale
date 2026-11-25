@@ -9,7 +9,7 @@
 //  - 5 збережених слотів колод із швидким перемиканням
 // =====================================================================
 
-export const VERSION = '0.5.0';
+export const VERSION = '0.6.0';
 
 // ---------- Рідкість ----------
 export const RARITY = {
@@ -291,7 +291,7 @@ export const CARDS = [
     look: { type: 'human', body: '#1e3a8a', skin: '#e6bf9c', hat: 'none', hair: '#2b2b2b', weapon: 'briefcase', tie: '#dc2626' },
   },
   {
-    id: 'unit_don', name: 'Хрещений батько (Дон)', kind: 'unit', role: 'Бос / Бафер', rarity: 'legendary', unlockArena: 5,
+    id: 'unit_don', name: 'Хрещений батько (Дон)', kind: 'unit', role: 'Бос / Бафер', rarity: 'epic', unlockArena: 5,
     cost: 6, count: 1, hp: 1450, shield: 0, dmg: 150, atkSpeed: 1.3, speedCode: 'SLOW', speed: 1.1,
     range: 4, splash: 3.5, targets: 'ALL', special: 'BUFF_ATK_SPEED_20',
     buffRadius: 3.5, buffAtkSpeed: 0.20,
@@ -312,10 +312,10 @@ export const CARDS = [
   {
     id: 'bldg_police_spikes', name: 'Поліцейський блокпост', kind: 'building', role: 'Пастка / Шипи', rarity: 'common', unlockArena: 2,
     cost: 2, count: 1, hp: 350, shield: 0, dmg: 25, atkSpeed: 0.5, speedCode: 'STATIC', speed: 0,
-    range: 1.5, splash: 1.5, targets: 'GROUND', special: 'SPIKES_TRAP',
+    range: 1.5, splash: 1.5, targets: 'GROUND', special: 'SPIKES_TRAP', untargetable: true,
     lifetime: 25, dps: 50, slowPct: 0.50, vehicleMult: 3.0, size: 0.85, isTrap: true,
     aiRole: 'building_defense',
-    desc: 'Смуга сталевих шипів 1x3. Сповільнює на 50%, завдає 25 шкоди/0.5с. Техніці завдає потрійної шкоди (75) та збиває таран!',
+    desc: 'Невичерпна пастка-смуга шипів 1x3. Вороги не атакують її, але отримують урон і сповільнення 50% (x3 шкоди техніці)!',
     look: { type: 'spikes', body: '#1f2937', light: '#3b82f6' },
   },
   {
@@ -324,7 +324,7 @@ export const CARDS = [
     range: 99, splash: 1.2, targets: 'GROUND', special: 'MANHOLE_TRAP',
     stunDuration: 1.0, impactDmg: 90, spawnToken: 'token_sawn_off_mob', spawnCount: 2, flightTime: 0.2,
     aiRole: 'trap',
-    desc: 'Невидима каналізаційна пастка. При наступі ворога кришка люка підкидає і оглушує на 1с, а з люка вистрибують 2 гангстери з обрізами!',
+    desc: 'Невидима пастка (на своїй половині та першій половині ворога). При наступі підкидає й оглушує на 1с, вистрибують 2 гангстери!',
   },
   {
     id: 'bldg_counterfeit_press', name: 'Підпільна друкарня', kind: 'building', role: 'Економіка + Інфляція', rarity: 'epic', unlockArena: 6,
@@ -363,20 +363,20 @@ export const CARDS = [
     look: { type: 'human', body: '#14532d', skin: '#e6bf9c', mask: '#84cc16', weapon: 'flask', apron: '#3f6212' },
   },
   {
-    id: 'unit_police_patrol', name: 'Патрульний', kind: 'unit', role: 'Швидкий захисник', rarity: 'common', unlockArena: 1,
-    cost: 2, count: 1, hp: 350, shield: 0, dmg: 65, atkSpeed: 1.1, speedCode: 'FAST', speed: 2.2,
-    range: 0.7, splash: 0, targets: 'GROUND', special: 'NONE', faction: 'police',
-    size: 0.42, sight: 5.5, aiRole: 'defender',
-    desc: 'Швидкий офіцер патрульної поліції з кийком. Миттєво прибуває на лінію для перехоплення диверсантів та швидких ворогів.',
-    look: { type: 'human', body: '#1e3a8a', skin: '#d2a07a', hat: 'police_cap', hatColor: '#172554', weapon: 'baton' },
+    id: 'unit_police_patrol', name: 'Патрульні', kind: 'unit', role: 'Загін стрільців (4)', rarity: 'common', unlockArena: 1,
+    cost: 3, count: 4, hp: 200, shield: 0, dmg: 48, atkSpeed: 1.1, speedCode: 'FAST', speed: 2.0,
+    range: 4.5, splash: 0, targets: 'ALL', special: 'SWARM_4', faction: 'police', shot: 'revolver',
+    size: 0.38, sight: 6.0, aiRole: 'shooter',
+    desc: 'Загін із 4 швидких патрульних поліцейських. Стріляють здалеку з револьверів (по землі та повітрю).',
+    look: { type: 'human', body: '#1e3a8a', skin: '#d2a07a', hat: 'police_cap', hatColor: '#172554', weapon: 'revolver', scale: 0.9 },
   },
   {
-    id: 'unit_police_chief', name: 'Шеф поліції', kind: 'unit', role: 'Важкий лідер + Щит', rarity: 'epic', unlockArena: 5,
+    id: 'unit_police_chief', name: 'Шеф поліції', kind: 'unit', role: 'Важкий лідер + Аура щита', rarity: 'epic', unlockArena: 5,
     cost: 6, count: 1, hp: 1400, shield: 0, dmg: 180, atkSpeed: 1.3, speedCode: 'SLOW', speed: 1.1,
-    range: 5.0, splash: 0, targets: 'ALL', special: 'CHIEF_SPAWN_SHIELD', faction: 'police',
-    shieldAmount: 250, shieldRadius: 6.0, shieldDuration: 8.0, shot: 'revolver',
+    range: 5.0, splash: 0, targets: 'ALL', special: 'CHIEF_SHIELD_AURA', faction: 'police',
+    shieldAmount: 250, shieldRadius: 4.5, shot: 'revolver',
     size: 0.58, sight: 6.8, aiRole: 'tank',
-    desc: 'Комісар міського управління. Стріляє з важкого револьвера. При виході віддає наказ у рацію: наділяє всіх союзників у радіусі 6.0 щитом 250 HP на 8 сек!',
+    desc: 'Комісар поліції з револьвером. Має навколо себе кільце аури: кожен союзник у радіусі отримує одноразовий щит +250 HP!',
     look: { type: 'human', body: '#0f172a', skin: '#d2a07a', hat: 'chief_hat', hatColor: '#1e293b', badge: '#facc15', weapon: 'revolver', scale: 1.18 },
   },
   {
@@ -387,12 +387,54 @@ export const CARDS = [
     aiRole: 'spell_damage',
     desc: 'Автотроща: завдає 260 шкоди по площі, відкидає ворогів назад і залишає на місці палаючий остов авто (700 HP на 10с), що блокує дорогу!',
   },
+
+  // --- Арена 7+: 5 Унікальних тактичних карт (v0.6.0) ---
+  {
+    id: 'unit_swat_wall', name: 'Поліцейська облава', kind: 'unit', role: 'Шеренга щитовиків (6)', rarity: 'epic', unlockArena: 3,
+    cost: 5, count: 6, hp: 420, shield: 0, dmg: 45, atkSpeed: 1.3, speedCode: 'SLOW', speed: 0.9,
+    range: 0.9, splash: 0, targets: 'GROUND', special: 'SWAT_WALL_6', faction: 'police',
+    frontShieldPct: 0.30, size: 0.42, sight: 4.5, aiRole: 'tank',
+    desc: 'Шеренга з 6 бійців SWAT на всю ширину арени (3 ліворуч, 3 праворуч). Передня броня блокує 30% шкоди у секторі 120°!',
+    look: { type: 'human', body: '#1e293b', skin: '#d2a07a', hat: 'helmet', hatColor: '#0f172a', weapon: 'shield_baton', scale: 0.98 },
+  },
+  {
+    id: 'spell_metro_heist', name: 'Метрополітен', kind: 'spell', role: 'Підземний десант (3)', rarity: 'epic', unlockArena: 4,
+    cost: 4, count: 0, hp: 0, shield: 0, dmg: 75, atkSpeed: 0, speedCode: 'INSTANT', speed: 0,
+    range: 99, splash: 1.2, targets: 'GROUND', special: 'METRO_HEIST_TELEPORT',
+    tunnelDuration: 3.0, warnTime: 1.5, spawnToken: 'token_metro_robber', spawnCount: 3, flightTime: 0.15,
+    aiRole: 'trap',
+    desc: '3 грабіжники застрибують у люк А на 3с (невразливі). За 1.5с до виходу люк Б на половині ворога тремтить, і загін вискакує в атаку!',
+  },
+  {
+    id: 'spell_toxic_barrel', name: 'Бочка з токсичними відходами', kind: 'spell', role: 'Котиться + Кислотний слід', rarity: 'rare', unlockArena: 4,
+    cost: 3, count: 0, hp: 0, shield: 0, dmg: 75, atkSpeed: 0, speedCode: 'INSTANT', speed: 0,
+    range: 99, splash: 1.5, targets: 'GROUND', special: 'TOXIC_BARREL_ROLL',
+    rollDist: 6.5, rollSpeed: 6.5, knockback: 1.1, puddleDuration: 5.0, puddleDps: 40, slowPct: 0.15, flightTime: 0.1,
+    aiRole: 'spell_damage',
+    desc: 'Бочка котиться 6.5 тайлів, відкидає дрібних ворогів і лишає токсичний слід на 5с (шкода/0.5с + -15% швидкості). Ігнорує вежі й авіацію!',
+  },
+  {
+    id: 'unit_protected_witness', name: 'Свідок під захистом', kind: 'unit', role: 'Ескорт (1 Свідок + 2 ФБР)', rarity: 'legendary', unlockArena: 5,
+    cost: 5, count: 3, hp: 260, shield: 0, dmg: 35, atkSpeed: 1.0, speedCode: 'VERY_FAST', speed: 2.5,
+    range: 0.8, splash: 0, targets: 'BUILDINGS_ONLY', special: 'PROTECTED_WITNESS_SQUAD',
+    size: 0.40, sight: 8.0, aiRole: 'tank',
+    desc: 'Швидкий Свідок біжить прямо до вежі, а 2 агенти ФБР прикривають його стрільбою. Якщо Свідок гине — агенти впадають у Лють (+25% швидкості)!',
+    look: { type: 'human', body: '#fef3c7', skin: '#e6bf9c', hat: 'none', hair: '#78350f', weapon: 'briefcase', scale: 0.92 },
+  },
+  {
+    id: 'unit_safecracker', name: 'Ведмежатник', kind: 'unit', role: 'Наростаючий штурм веж', rarity: 'epic', unlockArena: 5,
+    cost: 5, count: 1, hp: 1650, shield: 0, dmg: 80, atkSpeed: 0.8, speedCode: 'SLOW', speed: 1.0,
+    range: 1.1, splash: 0, targets: 'BUILDINGS_ONLY', special: 'SAFECRACKER_RAMP',
+    size: 0.58, sight: 7.0, aiRole: 'tank',
+    desc: 'Іде тільки на будівлі. Зламує вежу у 3 стадії: 0-2с (100%), 2-4с (250%), 4с+ (500% урону!). Будь-який стан чи відкидання скидає таймер!',
+    look: { type: 'human', body: '#18181b', skin: '#d2a07a', hat: 'cap', hatColor: '#09090b', weapon: 'drill', scale: 1.15 },
+  },
 ];
 
 export const CARD_CAPACITY_TOTAL = 150;
 export const CARD_CAPACITY_PER_ARENA = 30;
 
-// Токени (охоронці, мафіозі, гангстери з обрізами, остов авто)
+// Токени (охоронці, мафіозі, гангстери з обрізами, остов авто, свідок, ФБР, грабіжники)
 export const TOKENS = {
   token_guard: {
     id: 'token_guard', name: 'Охоронець', kind: 'unit', rarity: 'rare',
@@ -417,6 +459,24 @@ export const TOKENS = {
     count: 1, hp: 700, shield: 0, dmg: 0, atkSpeed: 10, speed: 0, range: 0, splash: 0,
     targets: 'NONE', special: 'WRECK_OBSTACLE', size: 0.9, lifetime: 10, decayPerSec: 70, isObstacle: true,
     look: { type: 'wreck', body: '#18181b', fire: true },
+  },
+  token_metro_robber: {
+    id: 'token_metro_robber', name: 'Грабіжник метро', kind: 'unit', rarity: 'epic',
+    count: 1, hp: 240, shield: 0, dmg: 75, atkSpeed: 0.8, speed: 2.3, range: 0.9, splash: 0,
+    targets: 'GROUND', special: 'NONE', size: 0.39, sight: 6.0,
+    look: { type: 'human', body: '#27272a', skin: '#e0b48f', hat: 'cap', hatColor: '#111827', weapon: 'knife', mask: '#18181b' },
+  },
+  token_witness: {
+    id: 'token_witness', name: 'Свідок', kind: 'unit', rarity: 'legendary',
+    count: 1, hp: 260, shield: 0, dmg: 35, atkSpeed: 1.0, speed: 2.5, range: 0.8, splash: 0,
+    targets: 'BUILDINGS_ONLY', special: 'WITNESS_RUNNER', size: 0.38, sight: 8.0,
+    look: { type: 'human', body: '#fef3c7', skin: '#e6bf9c', hat: 'none', hair: '#78350f', weapon: 'briefcase', scale: 0.92 },
+  },
+  token_fbi_agent: {
+    id: 'token_fbi_agent', name: 'Агент ФБР', kind: 'unit', rarity: 'legendary',
+    count: 1, hp: 680, shield: 0, dmg: 85, atkSpeed: 1.0, speed: 1.7, range: 4.5, splash: 0,
+    targets: 'ALL', special: 'FBI_BODYGUARD', size: 0.44, sight: 5.5, shot: 'pistol',
+    look: { type: 'human', body: '#0f172a', skin: '#d2a07a', hat: 'none', hair: '#1e293b', weapon: 'pistol', shades: true },
   },
 };
 
@@ -831,6 +891,27 @@ export const DEFAULT_TOWER = 'tower_mafia_mansion';
 //  КРИМІНАЛЬНА ХРОНІКА ТА НОВИНИ ОНОВЛЕНЬ (GAME_NEWS)
 // =====================================================================
 export const GAME_NEWS = [
+  {
+    id: 'news_v0_6_0',
+    version: '0.6.0',
+    date: '25.11.2026',
+    badge: 'ВЕЛИКЕ ОНОВЛЕННЯ',
+    badgeColor: '#3B82F6',
+    title: '5 нових тактичних карт, щити SWAT, Метрополітен та фікси арени!',
+    summary: 'Додано 5 унікальних карт (Поліцейська облава, Метрополітен, Токсична бочка, Свідок під захистом, Ведмежатник), фільтри в колоді та велике оновлення правил бою!',
+    bannerEmoji: '🛡️',
+    changes: [
+      '🛡️ Поліцейська облава (SWAT Wall): 6 щитовиків шеренгою на всю ширину арени, передня броня блокує 30% шкоди у секторі 120°!',
+      '🚇 Метрополітен: 3 грабіжники застрибують у люк на 3с (невразливі) і вистрибують на половині ворога після 1.5с попередження.',
+      '☢️ Бочка з токсичними відходами: котиться на 6.5 тайлів, відкидає дрібних ворогів і залишає кислотний слід на 5с (шкода + -15% швидкості).',
+      '💼 Свідок під захистом: швидкий Свідок біжить до вежі під прикриттям 2 агентів ФБР (при смерті Свідка агенти впадають у Лють +25%!).',
+      '🔓 Ведмежатник: облоговий танк із наростаючою шкодою по вежах (100% → 250% → 500% урону!). Контроль скидає таймер.',
+      '👮 Патрульні (4 шт.) тепер стріляють здалеку з револьверів; Дон став Епічним; Шеф поліції має кільце аури одноразового щита.',
+      '🗼 Головні вежі завжди мають активну пушку і стріляють на +1 клітинку далі; юніти в центрі при знесеній вежі одразу б\'ють найближчу вежу.',
+      '🚧 Поліцейський блокпост (шипи) більше не атакується ворогами; Засідка в люку доступна на своїй та першій половині ворога.',
+      '🔍 Додано фільтри та сортування карт у колоді (за рівнем, рідкістю, типом, ціною) та фікс ППО (тільки дальники б\'ють авіацію).'
+    ]
+  },
   {
     id: 'news_v0_5_0',
     version: '0.5.0',

@@ -147,6 +147,28 @@
             <h2>Колекція карт (<span id="collection-count">18</span> / 150)</h2>
             <span class="hint-text">Натисніть для інфо, прокачки або заміни</span>
           </div>
+          <div class="deck-filters-bar">
+            <select id="filter-rarity" class="filter-select" aria-label="Фільтр за рідкістю">
+              <option value="all">Усі рідкості</option>
+              <option value="common">Звичайні</option>
+              <option value="rare">Рідкісні</option>
+              <option value="epic">Епічні</option>
+              <option value="legendary">Легендарні</option>
+            </select>
+            <select id="filter-kind" class="filter-select" aria-label="Фільтр за типом">
+              <option value="all">Усі типи</option>
+              <option value="unit">Юніти</option>
+              <option value="building">Будівлі</option>
+              <option value="spell">Закляття</option>
+            </select>
+            <select id="filter-sort" class="filter-select" aria-label="Сортування">
+              <option value="arena">За ареною</option>
+              <option value="level">За рівнем (спад.)</option>
+              <option value="cost_asc">За ціною ($ ↑)</option>
+              <option value="cost_desc">За ціною ($ ↓)</option>
+              <option value="rarity">За рідкістю</option>
+            </select>
+          </div>
           <div id="collection-grid" class="cards-grid"></div>
 
           <!-- Місце під майбутні 132 карти по аренах -->

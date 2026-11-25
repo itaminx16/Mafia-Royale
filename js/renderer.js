@@ -317,7 +317,28 @@ export class Renderer {
           break;
         case 'chiefShield':
           Audio.play('shield');
-          this.rings.push({ x: ev.x, y: ev.y, r0: 0.5, r1: ev.r || 6.0, t: 0, dur: 0.5, color: '#38bdf8' });
+          this.rings.push({ x: ev.x, y: ev.y, r0: 0.5, r1: ev.r || 4.5, t: 0, dur: 0.45, color: '#38bdf8' });
+          break;
+        case 'metroStart':
+          Audio.play('manhole');
+          this.rings.push({ x: ev.ax, y: ev.ay, r0: 0.2, r1: 1.4, t: 0, dur: 0.4, color: '#f59e0b' });
+          break;
+        case 'metroWarn':
+          Audio.play('click');
+          this.rings.push({ x: ev.x, y: ev.y, r0: 0.3, r1: 1.6, t: 0, dur: 0.6, color: '#ef4444' });
+          break;
+        case 'metroEmerge':
+          Audio.play('manhole');
+          this.rings.push({ x: ev.x, y: ev.y, r0: 0.2, r1: 1.8, t: 0, dur: 0.35, color: '#facc15' });
+          this.triggerShake(JUICE.shakeSmall.amp, 0.14);
+          break;
+        case 'barrelLaunch':
+          Audio.play('acid');
+          this.rings.push({ x: ev.x, y: ev.y, r0: 0.2, r1: 1.3, t: 0, dur: 0.3, color: '#84cc16' });
+          break;
+        case 'witnessRage':
+          Audio.play('siren');
+          this.addFloatText(ev.x, ev.y - 0.8, 'ЛЮТЬ +25%!', '#ef4444', true);
           break;
         case 'death':
           for (let i = 0; i < 8; i++) {
@@ -413,6 +434,8 @@ export class Renderer {
     this._drawTracks(ctx);
     this._drawAreas(ctx, game);
     this._drawTraps(ctx, game);
+    this._drawTunnels(ctx, game);
+    this._drawBarrels(ctx, game);
 
     if (inspectedEntityId != null) {
       const ent = game.entities.find(e => e.id === inspectedEntityId && e.alive);
@@ -430,6 +453,8 @@ export class Renderer {
       if (!e.alive || e.deployT > 0) continue;
       if (e.special === 'BUFF_ATK_SPEED_20') {
         this._drawAuraCircle(ctx, e.x, e.y, CARD_MAP.unit_don.buffRadius, 'rgba(245, 158, 11, 0.16)', '#f59e0b');
+      } else if (e.special === 'CHIEF_SHIELD_AURA') {
+        this._drawAuraCircle(ctx, e.x, e.y, CARD_MAP.unit_police_chief.shieldRadius || 4.5, 'rgba(56, 189, 248, 0.16)', '#38bdf8');
       } else if (e.special === 'HEAL_AURA_65') {
         this._drawAuraCircle(ctx, e.x, e.y, CARD_MAP.unit_medic.healRadius, 'rgba(34, 197, 94, 0.13)', '#22c55e');
       }
@@ -1021,15 +1046,15 @@ export class Renderer {
     ctx.stroke();
 
     // Аури бафів / дебафів
-    if (e.vendetta) {
+    if (e.vendetta || e.rage) {
       ctx.strokeStyle = '#ef4444';
       ctx.lineWidth = 2.4;
       ctx.beginPath();
       ctx.ellipse(0, 2, r + 4, (r + 4) * 0.55, 0, 0, Math.PI * 2);
       ctx.stroke();
-    } else if (e.buffed) {
-      ctx.strokeStyle = '#f59e0b';
-      ctx.lineWidth = 1.8;
+    } else if (e.buffed || (e.rampT && e.rampT >= 2.0)) {
+      ctx.strokeStyle = e.rampT >= 4.0 ? '#ef4444' : '#f59e0b';
+      ctx.lineWidth = e.rampT >= 4.0 ? 2.6 : 1.8;
       ctx.beginPath();
       ctx.ellipse(0, 2, r + 3, (r + 3) * 0.52, 0, 0, Math.PI * 2);
       ctx.stroke();
@@ -1517,19 +1542,19 @@ export class Renderer {
           ctx.fillStyle = `rgba(190, 242, 100, ${0.24 * alpha})`;
           ctx.beginPath(); ctx.arc(cx, cy, r * 0.34, 0, Math.PI * 2); ctx.fill();
         }
-      } else if (a.kind === 'acid') {
+      } else if (a.kind === 'acid' || a.kind === 'acid_trail') {
         const g = ctx.createRadialGradient(p.x, p.y, r * 0.1, p.x, p.y, r);
         g.addColorStop(0, `rgba(132, 204, 22, ${0.45 * alpha})`);
         g.addColorStop(0.7, `rgba(101, 163, 13, ${0.35 * alpha})`);
         g.addColorStop(1, 'rgba(63, 98, 18, 0)');
         ctx.fillStyle = g;
         ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2); ctx.fill();
-        for (let i = 0; i < 5; i++) {
-          const ang = (i / 5) * Math.PI * 2 + game.time * 3;
+        for (let i = 0; i < 4; i++) {
+          const ang = (i / 4) * Math.PI * 2 + game.time * 3;
           const cx = p.x + Math.cos(ang) * r * 0.45;
           const cy = p.y + Math.sin(ang) * r * 0.45;
           ctx.fillStyle = `rgba(190, 242, 100, ${0.5 * alpha})`;
-          ctx.beginPath(); ctx.arc(cx, cy, 3.5 + Math.sin(game.time * 8 + i) * 2, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(cx, cy, 3.2 + Math.sin(game.time * 8 + i) * 1.8, 0, Math.PI * 2); ctx.fill();
         }
       } else if (a.kind === 'vendetta') {
         const pulse = 0.85 + Math.sin(game.time * 7) * 0.15;
@@ -1582,6 +1607,54 @@ export class Renderer {
       ctx.moveTo(-r * 0.6, 0); ctx.lineTo(r * 0.6, 0);
       ctx.moveTo(0, -r * 0.6); ctx.lineTo(0, r * 0.6);
       ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  _drawTunnels(ctx, game) {
+    if (!game.tunnels) return;
+    for (const tn of game.tunnels) {
+      const pa = this.toScreen(tn.ax, tn.ay);
+      const pb = this.toScreen(tn.bx, tn.by);
+      const r = 0.8 * this.tile;
+      // Люк А (вхід)
+      ctx.save();
+      ctx.translate(pa.x, pa.y);
+      ctx.fillStyle = '#09090b'; ctx.strokeStyle = '#52525b'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.ellipse(0, 0, r, r * 0.65, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.restore();
+      // Люк Б (вихід): за 1.5с до виходу тремтить і підсвічується для обох гравців!
+      ctx.save();
+      const warn = tn.t >= (tn.dur - tn.warnTime);
+      const shakeX = warn ? Math.sin(game.time * 45) * 3 : 0;
+      ctx.translate(pb.x + shakeX, pb.y);
+      ctx.fillStyle = warn ? '#7f1d1d' : '#18181b';
+      ctx.strokeStyle = warn ? '#facc15' : '#52525b';
+      ctx.lineWidth = warn ? 3 : 2;
+      ctx.beginPath(); ctx.ellipse(0, 0, r, r * 0.65, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      if (warn) {
+        ctx.fillStyle = '#fde047';
+        ctx.font = 'bold 11px Impact, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('!', 0, -r * 0.85);
+      }
+      ctx.restore();
+    }
+  }
+
+  _drawBarrels(ctx, game) {
+    if (!game.barrels) return;
+    for (const br of game.barrels) {
+      const p = this.toScreen(br.x, br.y);
+      const r = 0.65 * this.tile;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(br.dist * 3.5);
+      ctx.fillStyle = '#365314'; ctx.strokeStyle = '#111'; ctx.lineWidth = 2;
+      this._roundRect(ctx, -r, -r * 0.65, r * 2, r * 1.3, 4);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#a3e635';
+      ctx.beginPath(); ctx.arc(0, 0, r * 0.38, 0, Math.PI * 2); ctx.fill();
       ctx.restore();
     }
   }

@@ -39,6 +39,7 @@ class AppUI {
     this.authMode = 'login';
     this.pendingAdminAuth = null; // { mode, username, password }
     this.swapCardId = null;
+    this.deckFilters = { rarity: 'all', kind: 'all', sort: 'arena' };
 
     this.game = null;
     this.bot = null;
@@ -404,6 +405,7 @@ class AppUI {
 
     this.el.btnCancelSwap.addEventListener('click', () => {
       this.swapCardId = null;
+    this.deckFilters = { rarity: 'all', kind: 'all', sort: 'arena' };
       this.renderDeckTab();
     });
 
@@ -1177,6 +1179,7 @@ class AppUI {
         Audio.play('click');
         Save.selectDeckSlot(s);
         this.swapCardId = null;
+    this.deckFilters = { rarity: 'all', kind: 'all', sort: 'arena' };
         this.refreshAll();
       };
     });
@@ -1188,6 +1191,7 @@ class AppUI {
         Audio.play('click');
         Save.clearCurrentDeck();
         this.swapCardId = null;
+    this.deckFilters = { rarity: 'all', kind: 'all', sort: 'arena' };
         this.refreshAll();
       };
     }
@@ -1219,8 +1223,42 @@ class AppUI {
       `);
     }
     this.el.deckSlots.innerHTML = deckTiles.join('');
-    const rest = CARDS.filter(c => !d.deck.includes(c.id));
-    this.el.collectionGrid.innerHTML = rest.map(c => this._renderCardTile(c.id, { inDeck: false })).join('');
+
+    // Фільтри та сортування колекції карт (за рівнем, рідкістю, типом, ціною)
+    const fRar = document.getElementById('filter-rarity');
+    const fKind = document.getElementById('filter-kind');
+    const fSort = document.getElementById('filter-sort');
+    if (fRar && !fRar.dataset.bound) {
+      fRar.dataset.bound = '1';
+      fRar.value = this.deckFilters.rarity;
+      fRar.onchange = () => { this.deckFilters.rarity = fRar.value; Audio.play('click'); this.renderDeckTab(); };
+    }
+    if (fKind && !fKind.dataset.bound) {
+      fKind.dataset.bound = '1';
+      fKind.value = this.deckFilters.kind;
+      fKind.onchange = () => { this.deckFilters.kind = fKind.value; Audio.play('click'); this.renderDeckTab(); };
+    }
+    if (fSort && !fSort.dataset.bound) {
+      fSort.dataset.bound = '1';
+      fSort.value = this.deckFilters.sort;
+      fSort.onchange = () => { this.deckFilters.sort = fSort.value; Audio.play('click'); this.renderDeckTab(); };
+    }
+
+    const rarOrder = { common: 1, rare: 2, epic: 3, legendary: 4 };
+    let rest = CARDS.filter(c => !d.deck.includes(c.id));
+    if (this.deckFilters.rarity !== 'all') rest = rest.filter(c => c.rarity === this.deckFilters.rarity);
+    if (this.deckFilters.kind !== 'all') rest = rest.filter(c => c.kind === this.deckFilters.kind);
+    rest.sort((a, b) => {
+      const s = this.deckFilters.sort;
+      if (s === 'level') return (Save.getCardState(b.id).level - Save.getCardState(a.id).level) || (a.cost - b.cost);
+      if (s === 'cost_asc') return (a.cost - b.cost) || (a.unlockArena - b.unlockArena);
+      if (s === 'cost_desc') return (b.cost - a.cost) || (a.unlockArena - b.unlockArena);
+      if (s === 'rarity') return (rarOrder[b.rarity] - rarOrder[a.rarity]) || (a.cost - b.cost);
+      return (a.unlockArena - b.unlockArena) || (a.cost - b.cost);
+    });
+    this.el.collectionGrid.innerHTML = rest.length
+      ? rest.map(c => this._renderCardTile(c.id, { inDeck: false })).join('')
+      : `<div class="hint-text" style="grid-column:1/-1;text-align:center;padding:18px;">Немає карт за обраним фільтром</div>`;
 
     // Місце під розширення до 150 карт за аренами (по 30 слотів на арену)
     this.el.collectionRoadmap.innerHTML = `
@@ -1249,6 +1287,7 @@ class AppUI {
           Save.data.deck[idx] = this.swapCardId;
           Save.save();
           this.swapCardId = null;
+    this.deckFilters = { rarity: 'all', kind: 'all', sort: 'arena' };
           Audio.play('select');
           this.refreshAll();
           return;

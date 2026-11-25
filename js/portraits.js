@@ -289,6 +289,37 @@ const ART = {
     <circle cx="50" cy="46" r="16" fill="none" stroke="#ef4444" stroke-width="4" stroke-dasharray="6 4"/>
     <text x="50" y="86" font-family="Impact,Arial Black,sans-serif" font-size="14" text-anchor="middle" fill="#facc15">CRASH!</text>`,
 
+  // ---- 5 нових карт (v0.6.0) ----
+  unit_swat_wall: () => `
+    ${shoulders('#1e293b', '')}
+    ${face(50, 42, 0.95, '#d2a07a')}
+    <path d="M28 38 Q50 18 72 38 Z" fill="#0f172a" ${O}/>
+    <rect x="20" y="46" width="60" height="44" rx="5" fill="#1e293b" stroke="#000" stroke-width="3"/>
+    <rect x="28" y="52" width="44" height="12" rx="2" fill="#38bdf8" opacity="0.7" stroke="#000" stroke-width="1.5"/>
+    <text x="50" y="80" font-family="Impact,sans-serif" font-size="13" text-anchor="middle" fill="#fff">SWAT</text>`,
+  spell_metro_heist: () => `
+    <ellipse cx="50" cy="65" rx="34" ry="16" fill="#09090b" ${O}/>
+    <ellipse cx="50" cy="65" rx="26" ry="11" fill="#18181b" stroke="#f59e0b" stroke-width="2" stroke-dasharray="5 3"/>
+    <path d="M35 55 L42 32 L58 32 L65 55 Z" fill="#27272a" ${O}/>
+    <circle cx="44" cy="42" r="3" fill="#fde047"/><circle cx="56" cy="42" r="3" fill="#fde047"/>
+    <text x="50" y="25" font-family="Impact,sans-serif" font-size="13" text-anchor="middle" fill="#f59e0b">METRO</text>`,
+  spell_toxic_barrel: () => `
+    <rect x="24" y="24" width="52" height="58" rx="8" fill="#365314" ${O}/>
+    <rect x="24" y="34" width="52" height="8" fill="#1a2e05"/><rect x="24" y="62" width="52" height="8" fill="#1a2e05"/>
+    <circle cx="50" cy="52" r="11" fill="#a3e635" ${O}/>
+    <text x="50" y="57" font-family="Arial,sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="#1a2e05">☢</text>`,
+  unit_protected_witness: () => `
+    ${shoulders('#0f172a', '<rect x="22" y="68" width="16" height="22" fill="#fef3c7" stroke="#111" stroke-width="2"/>')}
+    ${face(38, 48, 0.9, '#e6bf9c')}${eyes(38, 48, 0.9)}
+    ${face(65, 44, 0.95, '#d2a07a')}<rect x="53" y="37" width="24" height="6" rx="2" fill="#111"/>
+    <text x="50" y="24" font-family="Impact,sans-serif" font-size="12" text-anchor="middle" fill="#38bdf8">FBI ESCORT</text>`,
+  unit_safecracker: () => `
+    ${shoulders('#18181b', '<rect x="44" y="72" width="12" height="18" fill="#3f3f46" stroke="#111" stroke-width="1.5"/>')}
+    ${face(50, 44, 1.05, '#d2a07a')}${eyes(50, 44, 1.05)}
+    <path d="M28 34 Q50 22 72 34 Z" fill="#09090b" ${O}/>
+    <path d="M72 56 L92 50 L92 62 Z" fill="#f59e0b" ${O}/>
+    <circle cx="88" cy="56" r="4" fill="#ef4444"/>`,
+
   // ---- Вежі ----
   tower_mafia_mansion: () => `
     <path d="M10 46 L50 18 L90 46 Z" fill="#5b3a29" ${O}/>

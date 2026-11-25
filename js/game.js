@@ -37,6 +37,8 @@ export class Game {
     this.projectiles = [];
     this.areas = [];
     this.traps = [];
+    this.barrels = [];
+    this.tunnels = [];
     this.pending = [];
     this.events = [];
     this.sides = {};
@@ -91,16 +93,18 @@ export class Game {
     const pos = ARENA.towers[side];
     const mk = (role, lane, p) => {
       const isKing = role === 'king';
+      const rng = isKing ? t.range + 1.0 : t.range;
       const e = this._baseEntity(side, {
         kind: 'tower', role, lane, x: p.x, y: p.y,
         r: isKing ? ARENA.kingRadius : ARENA.princessRadius,
         hp: isKing ? t.kingHp : t.princessHp,
         dmg: isKing ? t.kingDmg : t.princessDmg,
-        atkSpeed: t.atkSpeed, range: t.range, sight: t.range,
+        atkSpeed: t.atkSpeed, range: rng, sight: rng,
         targets: 'ALL', isBuilding: true, shot: t.shot,
         towerType: t.id,
       });
-      e.active = !isKing;
+      // Головні вежі (King) завжди мають активну пушку і стріляють на 1 клітинку далі за сусідні!
+      e.active = true;
       e.deployT = 0;
       this.entities.push(e);
       this.sides[side].towers[lane || 'K'] = e;
@@ -122,8 +126,9 @@ export class Game {
       stun: 0, freeze: 0, flashT: 0, damaged: false, stealth: false,
       angle: side === 'P' ? -Math.PI / 2 : Math.PI / 2,
       moving: false, walkT: Math.random() * 10, attackAnim: 0, buffed: false,
-      vendetta: false, slowT: 0,
+      vendetta: false, slowT: 0, trailSlowT: 0,
       lifetime: 0, age: 0, spawnT: 0, healT: 0,
+      chiefShielded: false, followId: null, rage: false, rampT: 0, rampTargetId: null,
     }, o, { maxHp: o.hp });
   }
 
@@ -134,6 +139,10 @@ export class Game {
     const def = CARD_MAP[cardId];
     if (!def) return false;
     if (x < 0 || x > ARENA.W || y < 0 || y > ARENA.H) return false;
+    if (def.special === 'MANHOLE_TRAP') {
+      // Засідка в люку: лише на своїй половині та першій половині противника (ближче до річки)
+      return side === 'P' ? (y >= 8.0 && y <= ARENA.H - 0.5) : (y <= 24.0 && y >= 0.5);
+    }
     if (def.kind === 'spell') return true;
     const xi = clamp(x, 0.5, ARENA.W - 0.5);
     if (Math.abs(xi - x) > 0.01) return false;
@@ -208,6 +217,33 @@ export class Game {
   }
 
   _spawnUnits(side, def, level, x, y, opts = {}) {
+    if (def.special === 'SWAT_WALL_6' && !opts.raw) {
+      // Поліцейська облава: горизонтальна шеренга на всю ширину арени (3 ліворуч, 3 праворуч)
+      const xs = [2.0, 3.5, 5.0, 13.0, 14.5, 16.0];
+      const out = [];
+      for (const sx of xs) {
+        const res = this._spawnUnits(side, def, level, sx, y, { count: 1, raw: true, silent: true, deployT: opts.deployT });
+        out.push(...res);
+      }
+      if (!opts.silent) this.emit('deploy', { side, x, y, cardId: def.id });
+      return out;
+    }
+
+    if (def.special === 'PROTECTED_WITNESS_SQUAD' && !opts.raw) {
+      // Свідок під захистом: 1 Свідок попереду + 2 Агенти ФБР позаду
+      const dir = side === 'P' ? 1 : -1;
+      const wDef = getDef('token_witness');
+      const aDef = getDef('token_fbi_agent');
+      const [witness] = this._spawnUnits(side, wDef, level, x, y, { count: 1, raw: true, silent: true, deployT: opts.deployT });
+      const agents = this._spawnUnits(side, aDef, level, x, clamp(y + 0.9 * dir, 0.5, ARENA.H - 0.5), { count: 2, raw: true, silent: true, deployT: opts.deployT });
+      agents.forEach((ag, idx) => {
+        ag.followId = witness.id;
+        ag.x = clamp(x + (idx === 0 ? -0.65 : 0.65), 0.4, ARENA.W - 0.4);
+      });
+      if (!opts.silent) this.emit('deploy', { side, x, y, cardId: def.id });
+      return [witness, ...agents];
+    }
+
     const n = opts.count || def.count || 1;
     const form = this._formation(n);
     const dir = side === 'P' ? 1 : -1;
@@ -229,19 +265,6 @@ export class Game {
       });
       e.maxShield = e.shield;
       if (def.special === 'STEALTH_UNTIL_HIT') e.stealth = true;
-      if (def.special === 'CHIEF_SPAWN_SHIELD') {
-        // Шеф поліції: при появі роздає міцний щит 250 HP союзникам у радіусі 6.0 на 8 секунд
-        const sVal = statAtLevel(def.shieldAmount || 250, level);
-        const rad = def.shieldRadius || 6.0;
-        for (const ally of this.entities) {
-          if (ally.alive && ally.side === side && ally.kind === 'unit' && dist(ally, { x, y }) <= rad) {
-            ally.shield = Math.max(ally.shield || 0, sVal);
-            ally.maxShield = Math.max(ally.maxShield || 0, sVal);
-            ally.shieldT = def.shieldDuration || 8.0;
-          }
-        }
-        this.emit('chiefShield', { x, y, r: rad, side });
-      }
       if (opts.deployT != null) { e.deployT = opts.deployT; e.deployMax = Math.max(0.01, opts.deployT); }
       this.entities.push(e);
       out.push(e);
@@ -259,7 +282,7 @@ export class Game {
       atkSpeed: def.atkSpeed, range: def.range, sight: def.range,
       targets: def.targets, special: def.special, isBuilding: true,
       lifetime: def.lifetime, shot: def.shot || null,
-      isObstacle: !!def.isObstacle,
+      isObstacle: !!def.isObstacle, untargetable: !!def.untargetable,
     });
     e.decay = def.lifetime ? (e.maxHp / def.lifetime) : 0;
     if (def.special === 'SPAWN_THUG_EVERY_7S') {
@@ -384,6 +407,42 @@ export class Game {
         this._spawnBuilding(side, wreckDef, level, x, y);
       }
       this.emit('carCrashImpact', { x, y, r: def.splash || 2.2 });
+    } else if (def.special === 'METRO_HEIST_TELEPORT') {
+      // Метрополітен: точка А (вхід) на своїй половині, точка Б (вихід) на половині ворога (мін. дистанція до веж)
+      const onOwnHalf = side === 'P' ? (y >= 16) : (y <= 16);
+      let ax = clamp(x, 1.5, ARENA.W - 1.5);
+      let ay = onOwnHalf ? clamp(y, side === 'P' ? 17.5 : 2.5, side === 'P' ? 28.0 : 14.5) : (side === 'P' ? 21.5 : 10.5);
+      let bx = ax;
+      let by = onOwnHalf ? (side === 'P' ? 10.5 : 21.5) : clamp(y, side === 'P' ? 4.0 : 17.5, side === 'P' ? 14.5 : 28.0);
+      // Відсунути точку Б від ворожих веж мінімум на 2.5 тайла
+      for (const tw of Object.values(this.sides[other(side)].towers)) {
+        if (!tw.alive) continue;
+        const d = Math.hypot(bx - tw.x, by - tw.y);
+        if (d < tw.r + 2.2) {
+          const ang = Math.atan2(by - tw.y, bx - tw.x) || (side === 'P' ? Math.PI / 2 : -Math.PI / 2);
+          bx = clamp(tw.x + Math.cos(ang) * (tw.r + 2.3), 1.5, ARENA.W - 1.5);
+          by = clamp(tw.y + Math.sin(ang) * (tw.r + 2.3), 2.5, ARENA.H - 2.5);
+        }
+      }
+      this.tunnels.push({
+        id: NEXT_ID++, side, level, ax, ay, bx, by,
+        t: 0, dur: def.tunnelDuration || 3.0, warnTime: def.warnTime || 1.5, warned: false,
+        spawnToken: def.spawnToken || 'token_metro_robber', spawnCount: def.spawnCount || 3,
+      });
+      this.emit('metroStart', { side, ax, ay, bx, by });
+    } else if (def.special === 'TOXIC_BARREL_ROLL') {
+      // Бочка з токсичними відходами: котиться по прямій 6.5 тайлів, відкидає і лишає слід на 5с
+      this.barrels.push({
+        id: NEXT_ID++, side, x, y,
+        dir: side === 'P' ? -1 : 1,
+        dist: 0, maxDist: def.rollDist || 6.5, speed: def.rollSpeed || 6.5,
+        dmg: statAtLevel(def.dmg || 75, level), knockback: def.knockback || 1.1,
+        hitSet: new Set(), trailStep: 0,
+        puddleDuration: def.puddleDuration || 5.0,
+        puddleDps: statAtLevel(def.puddleDps || 40, level),
+        slowPct: def.slowPct || 0.15,
+      });
+      this.emit('barrelLaunch', { side, x, y });
     }
   }
 
@@ -392,6 +451,13 @@ export class Game {
   // ------------------------------------------------------------------
   damage(e, amount, opts = {}) {
     if (!e.alive || amount <= 0) return;
+    // Поліцейська облава (SWAT Wall): передня броня блокує 30% шкоди у секторі 120°
+    if (e.special === 'SWAT_WALL_6' && opts.attacker && !opts.splash) {
+      const angToAtk = Math.atan2(opts.attacker.y - e.y, opts.attacker.x - e.x);
+      let diff = Math.abs(angToAtk - e.angle);
+      while (diff > Math.PI) diff = Math.abs(diff - Math.PI * 2);
+      if (diff <= Math.PI / 3) amount = Math.round(amount * 0.70);
+    }
     amount = Math.round(amount);
     if (opts.splash && e.stealth) e.stealth = false;
     e.flashT = 0.08;
@@ -420,6 +486,18 @@ export class Game {
     e.alive = false;
     e.hp = 0;
     if (e.kind === 'tower') return this._towerDestroyed(e);
+    if (e.special === 'WITNESS_RUNNER') {
+      // Якщо Свідок гине — Агенти ФБР впадають у Лють (+25% швидкості атаки й руху) і шукають ворогів самі
+      for (const ag of this.entities) {
+        if (ag.alive && ag.followId === e.id) {
+          ag.followId = null;
+          ag.rage = true;
+          ag.speed *= 1.25;
+          ag.atkSpeed /= 1.25;
+        }
+      }
+      this.emit('witnessRage', { x: e.x, y: e.y, side: e.side });
+    }
     if (e.special === 'RAM_AND_SPAWN_2_GUARDS') {
       this._explode(e, e.dmg, e.splash, { buildingsAndUnits: true });
       const def = getDef('token_guard');
@@ -493,8 +571,14 @@ export class Game {
   canTarget(a, t) {
     if (!t.alive || t.side === a.side) return false;
     if (t.stealth) return false;
+    if (t.untargetable || t.special === 'SPIKES_TRAP') return false;
     if (a.targets === 'NONE') return false;
     if (a.targets === 'BUILDINGS_ONLY') return t.isBuilding;
+    if (t.flying) {
+      // Повітряні юніти можуть атакувати тільки ті юніти, які мають дальню атаку або самі літають / вежі
+      const canHitAir = (a.targets === 'ALL' || a.targets === 'AIR') && (a.range >= 2.0 || a.flying || a.kind === 'tower' || a.kind === 'building');
+      if (!canHitAir) return false;
+    }
     if (a.targets === 'GROUND') return !t.flying;
     // Башні не можуть стріляти за свою половину арени (річка/середина Y = 16)
     if (a.kind === 'tower') {
@@ -509,9 +593,11 @@ export class Game {
     const en = this.sides[other(e.side)].towers;
     const lane = e.x < ARENA.W / 2 ? 'L' : 'R';
     if (en[lane].alive) return en[lane];
-    const o = lane === 'L' ? 'R' : 'L';
-    if (en.K.alive) return en.K;
-    return en[o].alive ? en[o] : null;
+    // Якщо вежу лінії знищено — обираємо найближчу живу вежу ворога (щоб юніт по центру атакував вежу)
+    const alive = [en.K, en.L, en.R].filter(tw => tw && tw.alive);
+    if (!alive.length) return null;
+    alive.sort((a, b) => dist(e, a) - dist(e, b));
+    return alive[0];
   }
 
   findTarget(e) {
@@ -582,11 +668,61 @@ export class Game {
     }
     this.pending = this.pending.filter(p => !p.done);
 
-    // Зони на полі: Вогонь (Молотов), Сльозогінний газ (уповільнення + шкода), Вендета (+40% шкоди), Кислота
+    // Зони на полі: Вогонь (Молотов), Сльозогінний газ, Вендета, Кислота, Слід бочки
     for (const e of this.entities) {
       e.vendetta = false;
       if (e.acidDebuff > 0) e.acidDebuff -= dt;
+      if (e.trailSlowT > 0) e.trailSlowT -= dt;
     }
+
+    // Метрополітен: підземний тунель (3с) + попередження за 1.5с до виходу
+    for (const tn of this.tunnels) {
+      tn.t += dt;
+      if (!tn.warned && tn.t >= (tn.dur - tn.warnTime)) {
+        tn.warned = true;
+        this.emit('metroWarn', { x: tn.bx, y: tn.by });
+      }
+      if (tn.t >= tn.dur) {
+        tn.done = true;
+        const mDef = getDef(tn.spawnToken || 'token_metro_robber');
+        if (mDef) {
+          this._spawnUnits(tn.side, mDef, tn.level, tn.bx, tn.by, { count: tn.spawnCount || 3, deployT: 0.25 });
+        }
+        this.emit('metroEmerge', { x: tn.bx, y: tn.by, side: tn.side });
+      }
+    }
+    this.tunnels = this.tunnels.filter(tn => !tn.done);
+
+    // Бочка з токсичними відходами: котиться по прямій 6.5 тайлів, відкидає наземних ворогів і спавнить слід
+    for (const br of this.barrels) {
+      const step = br.speed * dt;
+      br.y += br.dir * step;
+      br.dist += step;
+      br.trailStep += step;
+      // Спавн токсичної зони по сліду
+      if (br.trailStep >= 1.1) {
+        br.trailStep = 0;
+        this.areas.push({
+          side: br.side, x: br.x, y: br.y, r: 1.45, t: br.puddleDuration || 5.0, tick: 0.5,
+          dps: br.puddleDps || 40, slowPct: br.slowPct || 0.15, kind: 'acid_trail',
+        });
+      }
+      // Контакт з наземними юнітами ворога (повний імунітет у повітряних, будівель і веж)
+      for (const e of this.entities) {
+        if (!e.alive || e.side === br.side || e.flying || e.isBuilding || e.kind === 'tower') continue;
+        if (br.hitSet.has(e.id)) continue;
+        if (dist(e, br) <= 1.35 + e.r) {
+          br.hitSet.add(e.id);
+          this.damage(e, br.dmg, { splash: true, side: br.side });
+          if (e.alive && !e.vehicle) {
+            e.y = clamp(e.y + br.dir * (br.knockback || 1.1), 0.4, ARENA.H - 0.4);
+            e.rampT = 0; // Knockback скидає таймер Ведмежатника!
+          }
+        }
+      }
+      if (br.dist >= br.maxDist || br.y < 0.5 || br.y > ARENA.H - 0.5) br.done = true;
+    }
+    this.barrels = this.barrels.filter(br => !br.done);
 
     for (const a of this.areas) {
       a.t -= dt; a.tick -= dt;
@@ -601,6 +737,21 @@ export class Game {
             if (!e.alive || e.side === a.side) continue;
             if (dist(e, a) <= a.r + e.r * 0.5) {
               this.damage(e, e.kind === 'tower' ? Math.round(a.dps * a.towerPct) : a.dps, { splash: true, side: a.side });
+            }
+          }
+        }
+      } else if (a.kind === 'acid_trail') {
+        // Слід від токсичної бочки: шкода раз на 0.5с + -15% швидкості руху (імунітет у повітря, будівель і веж)
+        for (const e of this.entities) {
+          if (!e.alive || e.side === a.side || e.flying || e.isBuilding || e.kind === 'tower') continue;
+          if (dist(e, a) <= a.r + e.r * 0.5) e.trailSlowT = Math.max(e.trailSlowT || 0, 0.35);
+        }
+        if (a.tick <= 0 && a.t > -0.01) {
+          a.tick += 0.5;
+          for (const e of this.entities) {
+            if (!e.alive || e.side === a.side || e.flying || e.isBuilding || e.kind === 'tower') continue;
+            if (dist(e, a) <= a.r + e.r * 0.5) {
+              this.damage(e, Math.round(a.dps * 0.5), { splash: true, side: a.side });
             }
           }
         }
@@ -663,12 +814,25 @@ export class Game {
     }
     this.traps = this.traps.filter(tr => !tr.triggered);
 
-    // Аури (Дон)
+    // Аури (Дон + Шеф поліції)
     const dons = this.entities.filter(e => e.alive && e.special === 'BUFF_ATK_SPEED_20' && e.deployT <= 0);
+    const chiefs = this.entities.filter(e => e.alive && e.special === 'CHIEF_SHIELD_AURA' && e.deployT <= 0);
     for (const e of this.entities) {
       e.buffed = false;
       if (!e.alive || e.kind === 'tower') continue;
       for (const d of dons) if (d !== e && d.side === e.side && dist(d, e) <= CARD_MAP.unit_don.buffRadius) { e.buffed = true; break; }
+      if (!e.chiefShielded && e.kind === 'unit') {
+        for (const c of chiefs) {
+          if (c.side === e.side && dist(c, e) <= (CARD_MAP.unit_police_chief.shieldRadius || 4.5)) {
+            const sVal = statAtLevel(CARD_MAP.unit_police_chief.shieldAmount || 250, c.level || 1);
+            e.shield = (e.shield || 0) + sVal;
+            e.maxShield = Math.max(e.maxShield || 0, e.shield);
+            e.chiefShielded = true;
+            this.emit('chiefShield', { x: e.x, y: e.y, r: 1.2, side: e.side });
+            break;
+          }
+        }
+      }
     }
 
     for (const e of this.entities) if (e.alive) this._updateEntity(e, dt);
@@ -743,8 +907,8 @@ export class Game {
       if (e.hp <= 0) { this.kill(e); return; }
     }
 
-    if (e.freeze > 0) { e.freeze -= dt; e.moving = false; return; }
-    if (e.stun > 0) { e.stun -= dt; e.moving = false; return; }
+    if (e.freeze > 0) { e.freeze -= dt; e.moving = false; e.rampT = 0; return; }
+    if (e.stun > 0) { e.stun -= dt; e.moving = false; e.rampT = 0; return; }
 
     if (e.special === 'SPAWN_THUG_EVERY_7S') {
       const def = CARD_MAP[e.cardId];
@@ -841,6 +1005,56 @@ export class Game {
       }
       return;
     }
+    // Агенти ФБР: супроводжують Свідка (біжать трохи позаду нього і захищають від ворогів у радіусі)
+    if (e.special === 'FBI_BODYGUARD' && e.followId) {
+      const witness = this.entities.find(w => w.alive && w.id === e.followId);
+      if (witness) {
+        const dir = e.side === 'P' ? 1 : -1;
+        const followPt = { x: witness.x, y: clamp(witness.y + 0.9 * dir, 0.5, ARENA.H - 0.5) };
+        let threat = null, bd = Infinity;
+        for (const o of this.entities) {
+          if (!this.canTarget(e, o)) continue;
+          const dw = dist(witness, o);
+          if (dw <= 4.5 && dw < bd) { bd = dw; threat = o; }
+        }
+        if (threat && this.inRange(e, threat)) {
+          e.moving = false;
+          e.angle = Math.atan2(threat.y - e.y, threat.x - e.x);
+          e.atkTimer -= dt;
+          if (e.atkTimer <= 0) {
+            e.atkTimer = e.atkSpeed;
+            e.attackAnim = 0.18;
+            this._attack(e, threat);
+          }
+        } else {
+          // Рух за Свідком з його швидкістю
+          const savedSpd = e.speed;
+          e.speed = witness.speed;
+          if (dist(e, followPt) > 0.4) this._move(e, followPt, dt);
+          else e.moving = false;
+          e.speed = savedSpd;
+        }
+        return;
+      } else {
+        e.followId = null;
+      }
+    }
+
+    // Ведмежатник: нарощує таймер зламу поки атакує ту саму вежу/будівлю
+    if (e.special === 'SAFECRACKER_RAMP') {
+      if (e.target && e.target.alive && this.inRange(e, e.target)) {
+        if (e.rampTargetId !== e.target.id) {
+          e.rampTargetId = e.target.id;
+          e.rampT = 0;
+        } else {
+          e.rampT += dt;
+        }
+      } else {
+        e.rampT = 0;
+        e.rampTargetId = null;
+      }
+    }
+
     this._combat(e, dt, e.kind === 'unit');
   }
 
@@ -935,6 +1149,7 @@ export class Game {
             const ka = Math.atan2(o.y - e.y, o.x - e.x);
             o.x = clamp(o.x + Math.cos(ka) * kb, 0.4, ARENA.W - 0.4);
             o.y = clamp(o.y + Math.sin(ka) * kb, 0.4, ARENA.H - 0.4);
+            o.rampT = 0;
           }
         }
       }
@@ -986,17 +1201,21 @@ export class Game {
     const ranged = e.range >= 2 || e.kind === 'tower' || e.kind === 'building';
     if (ranged) {
       this.emit('shot', { id: e.id, shot: e.shot || 'pistol', x: e.x, y: e.y, tx: t.x, ty: t.y, side: e.side, tower: e.kind === 'tower', flying: e.flying });
-      this.damage(t, dmg, { side: e.side });
+      this.damage(t, dmg, { side: e.side, attacker: e });
       if (e.special === 'CONE_SPLASH') {
         for (const o of this.entities) {
           if (o === t || !this.canTarget(e, o)) continue;
-          if (dist(o, t) <= e.splash) this.damage(o, dmg, { splash: true, side: e.side });
+          if (dist(o, t) <= e.splash) this.damage(o, dmg, { splash: true, side: e.side, attacker: e });
         }
       }
     } else {
       const dog = e.look && e.look.type === 'dog';
-      // Бульдозер: x2 шкода по будівлях та вежах!
-      const finalDmg = (e.special === 'DOUBLE_BLDG_DMG' && t.isBuilding) ? dmg * 2 : dmg;
+      // Бульдозер: x2 шкода по будівлях та вежах! Ведмежатник: 100% -> 250% -> 500%!
+      let finalDmg = (e.special === 'DOUBLE_BLDG_DMG' && t.isBuilding) ? dmg * 2 : dmg;
+      if (e.special === 'SAFECRACKER_RAMP') {
+        const rampMult = e.rampT >= 4.0 ? 5.0 : e.rampT >= 2.0 ? 2.5 : 1.0;
+        finalDmg = Math.round(dmg * rampMult);
+      }
       this.emit('melee', { id: e.id, x: e.x, y: e.y, tx: t.x, ty: t.y, dog });
       // Викидайло: кожен 3-й удар завдає 1.5x шкоди по площі (радіус 2.0)
       if (e.special === 'CLEAVE_EVERY_3_HITS') {
@@ -1004,15 +1223,15 @@ export class Game {
         if (e.hitCount % 3 === 0) {
           const cleaveDmg = Math.round(finalDmg * 1.5);
           this.emit('bouncerCleave', { x: t.x, y: t.y, r: 2.0 });
-          this.damage(t, cleaveDmg, { side: e.side });
+          this.damage(t, cleaveDmg, { side: e.side, attacker: e });
           for (const o of this.entities) {
             if (o === t || !this.canTarget(e, o)) continue;
-            if (dist(o, t) <= 2.0) this.damage(o, cleaveDmg, { splash: true, side: e.side });
+            if (dist(o, t) <= 2.0) this.damage(o, cleaveDmg, { splash: true, side: e.side, attacker: e });
           }
           return;
         }
       }
-      this.damage(t, finalDmg, { side: e.side });
+      this.damage(t, finalDmg, { side: e.side, attacker: e });
     }
   }
 
@@ -1044,7 +1263,7 @@ export class Game {
     const dx = wp.x - e.x, dy = wp.y - e.y;
     const d = Math.hypot(dx, dy);
     if (d < 0.001) { e.moving = false; return; }
-    const spd = e.speed * (e.slowT > 0 ? 0.65 : 1);
+    const spd = e.speed * (e.slowT > 0 ? 0.65 : 1) * (e.trailSlowT > 0 ? 0.85 : 1);
     const step = Math.min(d, spd * dt);
     e.x += dx / d * step;
     e.y += dy / d * step;
@@ -1080,7 +1299,7 @@ export class Game {
         b.x += dx / d * push * wb * 2; b.y += dy / d * push * wb * 2;
       }
     }
-    const solids = this.entities.filter(e => e.alive && (e.kind === 'tower' || e.kind === 'building'));
+    const solids = this.entities.filter(e => e.alive && !e.untargetable && e.special !== 'SPIKES_TRAP' && (e.kind === 'tower' || e.kind === 'building'));
     for (const u of units) {
       if (!u.flying) {
         for (const s of solids) {
