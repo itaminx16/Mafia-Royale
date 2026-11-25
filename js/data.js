@@ -861,6 +861,21 @@ export const BOT_ARCHETYPES = [
     tower: 'tower_armored_bank',
     deck: ['unit_armored_van', 'unit_bulldozer', 'unit_biker', 'unit_croupier', 'unit_swat', 'spell_molotov', 'spell_sniper_shot', 'unit_drone'],
   },
+  {
+    id: 'arch_police_raid', name: 'Спецоперація ФБР', style: 'Щити SWAT + Шеф',
+    tower: 'tower_police_precinct',
+    deck: ['unit_swat_wall', 'unit_police_chief', 'unit_police_patrol', 'unit_protected_witness', 'bldg_police_spikes', 'spell_ricochet', 'unit_aa_truck', 'spell_teargas'],
+  },
+  {
+    id: 'arch_toxic_cartel', name: 'Токсичний Картель', style: 'Кислота та підриви',
+    tower: 'tower_underground_casino',
+    deck: ['unit_toxin_chemist', 'spell_toxic_barrel', 'unit_safecracker', 'unit_aa_truck', 'spell_car_crash', 'unit_thugs', 'spell_manhole_ambush', 'unit_medic'],
+  },
+  {
+    id: 'arch_sky_metro', name: 'Небесне Метро', style: 'Дирижабль + Підземний десант',
+    tower: 'tower_mafia_mansion',
+    deck: ['unit_contraband_blimp', 'spell_metro_heist', 'bldg_counterfeit_press', 'unit_don', 'spell_ricochet', 'unit_police_patrol', 'unit_croupier', 'spell_vendetta'],
+  },
 ];
 
 export const GAME_MODES = [

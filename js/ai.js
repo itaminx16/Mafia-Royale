@@ -87,13 +87,32 @@ export class Bot {
     if (small.length >= 3) {
       const c = this._cluster(small, 2.5);
       if (c.n >= 3) {
-        const mol = hand.find(h => (h.id === 'spell_molotov' || h.id === 'spell_teargas') && this.affordable(h));
+        const barrel = hand.find(h => (h.id === 'spell_toxic_barrel' || h.id === 'spell_car_crash') && this.affordable(h));
+        if (barrel && this.play(barrel, c.x, c.y)) return;
+        const mol = hand.find(h => (h.id === 'spell_molotov' || h.id === 'spell_teargas' || h.id === 'spell_ricochet') && this.affordable(h));
         if (mol && this.play(mol, c.x, c.y)) return;
-        const tommy = hand.find(h => (h.id === 'unit_tommy' || h.id === 'unit_arsonist' || h.id === 'unit_croupier') && this.affordable(h));
+        const tommy = hand.find(h => (h.id === 'unit_tommy' || h.id === 'unit_arsonist' || h.id === 'unit_croupier' || h.id === 'unit_toxin_chemist') && this.affordable(h));
         if (tommy && this.play(tommy, c.x, this.fromY(Math.max(1.5, this.Y(c.y) - 3)))) return;
-        const splash = hand.find(h => (h.id === 'bldg_barricade' || h.id === 'unit_medic') && this.affordable(h));
+        const splash = hand.find(h => (h.id === 'bldg_barricade' || h.id === 'unit_medic' || h.id === 'bldg_police_spikes') && this.affordable(h));
         if (splash && this.play(splash, c.x, this.fromY(Math.max(2, this.Y(c.y) - 2.5)))) return;
       }
+    }
+
+    // ---------- Пастки (Шипи на міст / Люк / Друкарня за вежею) ----------
+    const spikes = hand.find(h => h.id === 'bldg_police_spikes' && this.affordable(h));
+    if (spikes && threats.some(e => e.vehicle || e.speed >= 2.0)) {
+      const th = threats.find(e => e.vehicle || e.speed >= 2.0);
+      const bx = th.x < ARENA.W / 2 ? ARENA.bridges[0].cx : ARENA.bridges[1].cx;
+      if (this.play(spikes, bx, this.fromY(13.2))) return;
+    }
+    const press = hand.find(h => h.id === 'bldg_counterfeit_press' && this.affordable(h));
+    if (press && threats.length === 0 && cash >= 6) {
+      if (this.play(press, Math.random() < 0.5 ? 6.5 : 11.5, this.fromY(6.5))) return;
+    }
+    const ric = hand.find(h => h.id === 'spell_ricochet' && this.affordable(h));
+    if (ric && threats.length >= 2) {
+      const c = this._cluster(threats, 3.0);
+      if (c.n >= 2 && this.play(ric, c.x, c.y)) return;
     }
 
     // ---------- 3) Захист ----------
@@ -302,11 +321,11 @@ export class Bot {
 // Колода бота, збалансована за ролями (танк, стрілець, натовп, захист, закляття)
 export function makeBotDeck() {
   const pools = {
-    tank: ['unit_bouncer', 'unit_armored_van', 'unit_don'],
-    shooter: ['unit_hitman', 'unit_tommy', 'unit_lawyer', 'unit_medic'],
-    swarm: ['unit_thugs', 'unit_k9', 'unit_detective', 'unit_biker', 'unit_drone'],
-    def: ['bldg_barricade', 'unit_swat', 'bldg_casino_spawner'],
-    spell: ['spell_molotov', 'spell_bribe', 'spell_sniper_shot'],
+    tank: ['unit_bouncer', 'unit_armored_van', 'unit_don', 'unit_police_chief', 'unit_safecracker', 'unit_contraband_blimp', 'unit_swat_wall', 'unit_protected_witness'],
+    shooter: ['unit_hitman', 'unit_tommy', 'unit_lawyer', 'unit_medic', 'unit_aa_truck', 'unit_toxin_chemist', 'unit_police_patrol', 'unit_croupier'],
+    swarm: ['unit_thugs', 'unit_k9', 'unit_detective', 'unit_biker', 'unit_drone', 'unit_police_patrol'],
+    def: ['bldg_barricade', 'unit_swat', 'bldg_casino_spawner', 'bldg_police_spikes', 'bldg_counterfeit_press'],
+    spell: ['spell_molotov', 'spell_bribe', 'spell_sniper_shot', 'spell_ricochet', 'spell_toxic_barrel', 'spell_car_crash', 'spell_metro_heist', 'spell_manhole_ambush'],
   };
   const pick = (arr, n, out) => {
     const a = arr.filter(x => !out.includes(x)).sort(() => Math.random() - 0.5);
