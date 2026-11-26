@@ -93,7 +93,7 @@ export class Game {
     const pos = ARENA.towers[side];
     const mk = (role, lane, p) => {
       const isKing = role === 'king';
-      const rng = isKing ? t.range + 1.0 : t.range;
+      const rng = isKing ? Math.max(5.5, t.range - 1.2) : t.range;
       const e = this._baseEntity(side, {
         kind: 'tower', role, lane, x: p.x, y: p.y,
         r: isKing ? ARENA.kingRadius : ARENA.princessRadius,
@@ -103,8 +103,8 @@ export class Game {
         targets: 'ALL', isBuilding: true, shot: t.shot,
         towerType: t.id,
       });
-      // Головні вежі (King) завжди мають активну пушку і стріляють на 1 клітинку далі за сусідні!
-      e.active = true;
+      // Головна вежа спить (корона на даху) і висуває пушку при отриманні першого урону або знесенні сусідньої вежі
+      e.active = !isKing;
       e.deployT = 0;
       this.entities.push(e);
       this.sides[side].towers[lane || 'K'] = e;
@@ -699,11 +699,11 @@ export class Game {
       br.y += br.dir * step;
       br.dist += step;
       br.trailStep += step;
-      // Спавн токсичної зони по сліду
-      if (br.trailStep >= 1.1) {
+      // Спавн широкої токсичної зони по сліду
+      if (br.trailStep >= 1.0) {
         br.trailStep = 0;
         this.areas.push({
-          side: br.side, x: br.x, y: br.y, r: 1.45, t: br.puddleDuration || 5.0, tick: 0.5,
+          side: br.side, x: br.x, y: br.y, r: 1.85, t: br.puddleDuration || 5.0, tick: 0.5,
           dps: br.puddleDps || 40, slowPct: br.slowPct || 0.15, kind: 'acid_trail',
         });
       }
@@ -711,7 +711,7 @@ export class Game {
       for (const e of this.entities) {
         if (!e.alive || e.side === br.side || e.flying || e.isBuilding || e.kind === 'tower') continue;
         if (br.hitSet.has(e.id)) continue;
-        if (dist(e, br) <= 1.35 + e.r) {
+        if (dist(e, br) <= 1.9 + e.r) {
           br.hitSet.add(e.id);
           this.damage(e, br.dmg, { splash: true, side: br.side });
           if (e.alive && !e.vehicle) {

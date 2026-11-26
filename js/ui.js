@@ -395,7 +395,7 @@ class AppUI {
       Audio.unlock();
       if (Save.data.deck.length < 8) {
         Audio.play('error');
-        alert(`У вашій колоді має бути рівно 8 карт! Зараз обрано: ${Save.data.deck.length}/8.\nПерейдіть у розділ «Колода» та додайте карти.`);
+        this.showToast(`У колоді має бути 8 карт! Зараз: ${Save.data.deck.length}/8`, '🃏');
         this.switchTab('deck');
         return;
       }
@@ -409,7 +409,6 @@ class AppUI {
 
     this.el.btnCancelSwap.addEventListener('click', () => {
       this.swapCardId = null;
-    this.deckFilters = { rarity: 'all', kind: 'all', sort: 'arena' };
       this.renderDeckTab();
     });
 
@@ -417,8 +416,8 @@ class AppUI {
     const closable = [
       this.el.cardModal, this.el.arenaModal, this.el.modesModal,
       this.el.profileModal, this.el.settingsModal, this.el.adminModal,
-      this.el.whatsNewModal, this.el.newsModal,
-    ];
+      this.el.whatsNewModal, this.el.newsModal, document.getElementById('road-modal'),
+    ].filter(Boolean);
     for (const m of closable) {
       m.addEventListener('click', e => {
         if (e.target === m || e.target.closest('[data-close-modal]')) {
@@ -426,6 +425,15 @@ class AppUI {
         }
       });
     }
+  }
+
+  showToast(msg, icon = '👑') {
+    const el = document.getElementById('game-toast');
+    if (!el) return;
+    el.innerHTML = `<span class="gt-icon">${icon}</span><span class="gt-msg">${msg}</span>`;
+    el.classList.remove('hidden');
+    clearTimeout(this._toastTimer);
+    this._toastTimer = setTimeout(() => el.classList.add('hidden'), 2800);
   }
 
   switchTab(tab) {
@@ -484,11 +492,17 @@ class AppUI {
         <span class="hero-arena-badge">АРЕНА ${ar.num}${d.autoArena ? ' • АВТО' : ' • ОБРАНО'}</span>
         <span class="hero-arena-tap">🗺️ Усі арени ▾</span>
       </div>
-      <div class="hero-arena-visual" style="background:${ar.bg}">
+      <div class="hero-arena-visual" style="background:radial-gradient(circle at 50% 50%, ${ar.bg} 0%, #090b10 100%); border-color:${ar.bridge}">
+        <div class="hero-mini-tower enemy" style="left:22%"></div>
+        <div class="hero-mini-tower enemy king" style="left:50%"></div>
+        <div class="hero-mini-tower enemy" style="left:78%"></div>
         <div class="hero-river">
           <div class="hero-bridge" style="background:${ar.bridge}"></div>
           <div class="hero-bridge" style="background:${ar.bridge}"></div>
         </div>
+        <div class="hero-mini-tower player" style="left:22%"></div>
+        <div class="hero-mini-tower player king" style="left:50%"></div>
+        <div class="hero-mini-tower player" style="left:78%"></div>
       </div>
       <div class="hero-arena-title">${ar.name}</div>
       <div class="hero-arena-spec">✨ ${ar.specialty} • 🎵 ${ar.bpm} BPM</div>
@@ -552,7 +566,7 @@ class AppUI {
           this.openChestSequence(goldChest);
         } else {
           Audio.play('click');
-          alert(`Зберіть ${10 - (Save.data.crownChest?.crowns || 0)} ще корон у боях, щоб відкрити Золотий Кейс!`);
+          this.showToast(`Зберіть ще ${10 - (Save.data.crownChest?.crowns || 0)} корон у боях, щоб відкрити Золотий Кейс!`, '👑');
         }
       };
     }
@@ -1027,21 +1041,21 @@ class AppUI {
       Save.adminGrantAll();
       Audio.play('victory');
       this.refreshAll();
-      alert('Нараховано +50 000 🪙 та по +100 копій кожної карти!');
+      this.showToast('Нараховано +50 000 🪙 та по +100 копій кожної карти!', '💎');
     });
 
     document.getElementById('adm-max-cards').addEventListener('click', () => {
       Save.adminMaxAllCards();
       Audio.play('crown');
       this.refreshAll();
-      alert('Усі карти прокачано до 6 рівня!');
+      this.showToast('Усі карти прокачано до 6 рівня!', '⬆️');
     });
 
     document.getElementById('adm-unlock-story').addEventListener('click', () => {
       for (const ch of STORY_CHAPTERS) Save.data.storyDone[ch.id] = true;
       Save.save();
       Audio.play('select');
-      alert('Усі 5 глав Сюжету відкрито!');
+      this.showToast(`Усі ${STORY_CHAPTERS.length} глав Сюжету відкрито!`, '📜');
     });
 
     this.el.adminModalBody.querySelectorAll('[data-adm-t]').forEach(btn => {
@@ -1076,13 +1090,13 @@ class AppUI {
   async checkForUpdates(manual = false) {
     if (this._updating || this.game) return;
     if (!navigator.onLine) {
-      if (manual) alert('Немає підключення до інтернету. Ви граєте в офлайн-режимі (v' + VERSION + ').');
+      if (manual) this.showToast('Офлайн-режим (v' + VERSION + '). Перевірте інтернет.', '📡');
       return;
     }
     try {
       const resp = await fetch(`./version.json?t=${Date.now()}`, { cache: 'no-store' });
       if (!resp.ok) {
-        if (manual) alert('Не вдалося перевірити оновлення (перевірте інтернет).');
+        if (manual) this.showToast('Не вдалося перевірити оновлення.', '⚠️');
         return;
       }
       const info = await resp.json();
@@ -1146,7 +1160,7 @@ class AppUI {
       }, 650);
     } catch (e) {
       this._updating = false;
-      if (manual) alert('Помилка перевірки оновлень.');
+      if (manual) this.showToast('Помилка перевірки оновлень.', '⚠️');
     }
   }
 
@@ -1567,7 +1581,7 @@ class AppUI {
         if (!dl || dl.bought) return;
         if (d.gold < dl.price) {
           Audio.play('error');
-          alert('Недостатньо монет! Заробляйте монети в боях та сюжеті.');
+          this.showToast('Недостатньо монет! Заробляйте монети в боях.', '🪙');
           return;
         }
         d.gold -= dl.price;
@@ -1614,7 +1628,7 @@ class AppUI {
         if (!ch) return;
         if (Save.data.gold < ch.price) {
           Audio.play('error');
-          alert(`Недостатньо монет! Потрібно ${ch.price} 🪙.`);
+          this.showToast(`Недостатньо монет! Потрібно ${ch.price} 🪙.`, '🪙');
           return;
         }
         Save.data.gold -= ch.price;

@@ -553,13 +553,16 @@ export class Renderer {
       }
     }
 
-    // Дороги від мостів до веж
-    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    // Дороги від мостів до веж з бордюрами
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
     for (const b of ARENA.bridges) {
-      const bx = (b.cx - 1.15) * T, bw = 2.3 * T;
+      const bx = (b.cx - 1.25) * T, bw = 2.5 * T;
       ctx.fillRect(bx, 4.5 * T, bw, (ARENA.H - 9) * T);
-      ctx.strokeStyle = 'rgba(250, 204, 21, 0.24)';
+      ctx.strokeStyle = 'rgba(255,255,255,0.07)';
       ctx.lineWidth = 1.5;
+      ctx.strokeRect(bx, 4.5 * T, bw, (ARENA.H - 9) * T);
+      ctx.strokeStyle = 'rgba(250, 204, 21, 0.28)';
+      ctx.lineWidth = 1.6;
       ctx.setLineDash([T * 0.45, T * 0.45]);
       ctx.beginPath();
       ctx.moveTo(b.cx * T, 5 * T);
@@ -710,7 +713,15 @@ export class Renderer {
     ctx.save();
     ctx.translate(this.ox, this.oy);
 
-    if (def.kind !== 'spell') {
+    if (def.special === 'MANHOLE_TRAP') {
+      ctx.fillStyle = JUICE.forbidden;
+      ctx.fillRect(0, 0, ARENA.W * T, 8.0 * T);
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.6)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 4]);
+      ctx.strokeRect(2, 8.0 * T, ARENA.W * T - 4, (ARENA.H - 8.5) * T);
+      ctx.setLineDash([]);
+    } else if (def.kind !== 'spell') {
       ctx.fillStyle = JUICE.forbidden;
       const pocket = game.sides.P.pocket;
       const pDepth = ARENA.pocketDepth;
@@ -741,6 +752,52 @@ export class Renderer {
     const hasCash = game.sides.P.cash >= def.cost;
     const ok = okZone && hasCash;
     const p = this.toScreen(aim.x, aim.y);
+
+    // Бочка з токсичними відходами: показуємо широкий коридор котіння на 6.5 тайлів вперед!
+    if (def.special === 'TOXIC_BARREL_ROLL') {
+      const halfW = (def.splash || 1.9) * this.tile;
+      const rollH = (def.rollDist || 6.5) * this.tile;
+      ctx.save();
+      ctx.fillStyle = hasCash ? 'rgba(132, 204, 22, 0.22)' : 'rgba(245, 158, 11, 0.18)';
+      ctx.strokeStyle = hasCash ? '#a3e635' : '#f59e0b';
+      ctx.lineWidth = 2.4;
+      this._roundRect(ctx, p.x - halfW, p.y - rollH, halfW * 2, rollH, 10);
+      ctx.fill();
+      ctx.stroke();
+      // Стрілка напрямку руху бочки
+      ctx.strokeStyle = '#bef264';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y - 6); ctx.lineTo(p.x, p.y - rollH + 10);
+      ctx.moveTo(p.x - 8, p.y - rollH + 20); ctx.lineTo(p.x, p.y - rollH + 10); ctx.lineTo(p.x + 8, p.y - rollH + 20);
+      ctx.stroke();
+      ctx.restore();
+      return;
+    }
+
+    // Поліцейська облава (SWAT Wall): показуємо всі 6 точок спавну шеренги!
+    if (def.special === 'SWAT_WALL_6') {
+      const xs = [2.0, 3.5, 5.0, 13.0, 14.5, 16.0];
+      const yClamp = Math.max(ARENA.riverY1, Math.min(ARENA.H - 0.5, aim.y));
+      const pL = this.toScreen(2.0, yClamp);
+      const pR = this.toScreen(16.0, yClamp);
+      ctx.save();
+      ctx.strokeStyle = ok ? 'rgba(0, 229, 255, 0.65)' : 'rgba(239, 68, 68, 0.65)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([5, 4]);
+      ctx.beginPath(); ctx.moveTo(pL.x, pL.y); ctx.lineTo(pR.x, pR.y); ctx.stroke();
+      ctx.setLineDash([]);
+      for (const sx of xs) {
+        const sp = this.toScreen(sx, yClamp);
+        ctx.fillStyle = ok ? 'rgba(0, 229, 255, 0.45)' : okZone ? 'rgba(245, 158, 11, 0.45)' : 'rgba(239, 68, 68, 0.45)';
+        ctx.strokeStyle = ok ? '#00E5FF' : okZone ? '#f59e0b' : '#ef4444';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(sp.x, sp.y, Math.max(8, 0.42 * this.tile), 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      }
+      ctx.restore();
+      return;
+    }
+
     const radiusTiles = def.kind === 'spell' ? (def.splash || 2)
       : def.range >= 2 ? def.range
       : (def.healRadius || def.buffRadius || 1.15);
@@ -1090,7 +1147,16 @@ export class Renderer {
 
     ctx.restore();
 
-    // Статуси (Сльозогінний газ, Заморозка, Стан)
+    // Статуси (Щит, Сльозогінний газ, Заморозка, Стан)
+    if (e.shield > 0) {
+      ctx.strokeStyle = '#38bdf8';
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.14)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0, flyH - r * 0.65, r * 1.05, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
     if (e.slowT > 0) {
       ctx.fillStyle = 'rgba(132, 204, 22, 0.3)';
       ctx.beginPath();
